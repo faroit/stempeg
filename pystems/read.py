@@ -9,6 +9,30 @@ def read_stems(
     mono=False,
     out_type=np.float32
 ):
+    """Read STEMS format into numpy Tensor
+
+    Parameters
+    ----------
+    filename : str
+        Filename of STEMS format. Typically `filename.stem.mp4`
+    centered : boolean
+        STEMS format is stereo only. Setting :code:`mono=True` downmixes to the
+        output to mono. Also reduces the dimensions to 2. Defaults to False.
+    out_type : type
+        Output type. Defaults to 32bit float aka `np.float32`.
+
+    Returns
+    -------
+    stems : array_like
+        The tensor of Matrix of stems. The date shape is formatted as
+        :code:`stems x channels x samples`. In case of a `mono=True`,
+        the shape is :code:`stems x samples`.
+
+    Notes
+    -----
+    ...
+    """
+
     sr = 44100
     channels = 1 if mono else 2
     stems = []
