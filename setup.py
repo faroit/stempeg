@@ -4,7 +4,7 @@ import setuptools
 if __name__ == "__main__":
     setuptools.setup(
         # Name of the project
-        name='pystems',
+        name='stempeg',
 
         # Version
         version='0.0.1',
