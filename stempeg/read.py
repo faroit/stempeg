@@ -7,7 +7,7 @@ DEVNULL = open(os.devnull, 'w')
 def read_stems(
     filename,
     mono=False,
-    out_type=np.float32
+    out_type=np.float
 ):
     """Read STEMS format into numpy Tensor
 

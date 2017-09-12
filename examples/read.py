@@ -1,5 +1,5 @@
 import argparse
-import pystems as ps
+import stempeg
 
 
 if __name__ == '__main__':
@@ -10,7 +10,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read stems
-    S, sr = ps.read_stems(args.input)
+    S, sr = stempeg.read_stems(args.input)
 
-    # write back
-    ps.write_stems(S, "out.mp4", sr)
+    # write strems
+    stempeg.write_stems(S, "out.mp4", sr)
