@@ -17,7 +17,7 @@ def read_stems(
         Filename of STEMS format. Typically `filename.stem.mp4`
     centered : boolean
         STEMS format is stereo only. Setting :code:`mono=True` downmixes to the
-        output to mono. Also reduces the dimensions to 2. Defaults to False.
+        output to mono. Defaults to False.
     out_type : type
         Output type. Defaults to 32bit float aka `np.float32`.
 
@@ -25,8 +25,8 @@ def read_stems(
     -------
     stems : array_like
         The tensor of Matrix of stems. The date shape is formatted as
-        :code:`stems x channels x samples`. In case of a `mono=True`,
-        the shape is :code:`stems x samples`.
+        :code:`stems x samples x channels`. In case of a `mono=True`,
+        the shape is :code:`stems x samples x 1`.
 
     Notes
     -----
@@ -69,4 +69,5 @@ def read_stems(
 
         stems.append(audio)
 
-    return np.array(stems), sr
+    stems = np.swapaxes(np.array(stems), 1, 2)
+    return stems, sr

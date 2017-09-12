@@ -39,7 +39,7 @@ def write_stems(
 
     with contextlib.nested(*[tempfile()] * audio.shape[0]) as x:
         for k, i in enumerate(x):
-            scipy.io.wavfile.write(i, sr, audio[k].T)
+            scipy.io.wavfile.write(i, sr, audio[k])
 
         cmd = (
             [
