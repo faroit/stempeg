@@ -4,13 +4,13 @@ import setuptools
 if __name__ == "__main__":
     setuptools.setup(
         # Name of the project
-        name='pystems',
+        name='stempeg',
 
         # Version
-        version='0.0.1',
+        version='0.1.0',
 
         # Description
-        description='Read STEMS into numpy tensor',
+        description='Read and write audio STEMS',
 
         # Your contact information
         author='Fabian-Robert Stoeter',
@@ -27,6 +27,7 @@ if __name__ == "__main__":
         # computations stack
         install_requires=[
             'numpy>=1.6',
+            'scipy'
         ],
 
         classifiers=[
