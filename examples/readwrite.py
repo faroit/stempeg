@@ -1,3 +1,5 @@
+"""Opens a stem file and saves (reëncodes) back to a stem file
+"""
 import argparse
 import stempeg
 
