@@ -51,7 +51,7 @@ def read_info(
 
 def read_stems(
     filename,
-    out_type=np.float
+    out_type=np.float_
 ):
     """Read STEMS format into numpy Tensor
 
