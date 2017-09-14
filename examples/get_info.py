@@ -1,4 +1,4 @@
-"""Opens a stem file and saves (reencodes) back to a stem file
+"""Opens a stem file prints stream info
 """
 import argparse
 import stempeg
@@ -12,7 +12,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read stems
-    S, sr = stempeg.read_stems(args.input)
-    print(S.shape)
-    # write strems
-    stempeg.write_stems(S, "out.mp4", sr)
+    Info = stempeg.read_info(args.input)
+    print(Info)

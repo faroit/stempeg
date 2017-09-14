@@ -1,12 +1,56 @@
 import numpy as np
 import subprocess as sp
 import os
+import json
 DEVNULL = open(os.devnull, 'w')
+
+
+class FFMPEGInfo(object):
+    """docstring for FFMPEGInfo."""
+    def __init__(self, filename):
+        super(FFMPEGInfo, self).__init__()
+        self.filename = filename
+        self.json_info = read_info(self.filename)
+
+    @property
+    def nb_audio_streams(self):
+        return sum(
+            [s['codec_type'] == 'audio' for s in self.json_info['streams']]
+        )
+
+    def audio_stream_idx(self):
+        return [
+            s['index']
+            for s in self.json_info['streams']
+            if s['codec_type'] == 'audio'
+        ]
+
+    def rate(self, stream):
+        return int(self.json_info['streams'][stream]['sample_rate'])
+
+    def channels(self, stream):
+        return int(self.json_info['streams'][stream]['channels'])
+
+
+def read_info(
+    filename
+):
+    cmd = [
+        'ffprobe',
+        filename,
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_format', '-show_streams',
+    ]
+    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=DEVNULL)
+    with p.stdout as stdout:
+        info = json.load(stdout)
+
+    return info
 
 
 def read_stems(
     filename,
-    mono=False,
     out_type=np.float
 ):
     """Read STEMS format into numpy Tensor
@@ -15,9 +59,6 @@ def read_stems(
     ----------
     filename : str
         Filename of STEMS format. Typically `filename.stem.mp4`
-    centered : boolean
-        STEMS format is stereo only. Setting :code:`mono=True` downmixes to the
-        output to mono. Defaults to False.
     out_type : type
         Output type. Defaults to 32bit float aka `np.float32`.
 
@@ -33,11 +74,13 @@ def read_stems(
     ...
     """
 
-    sr = 44100
-    channels = 1 if mono else 2
+    FFinfo = FFMPEGInfo(filename)
+
     stems = []
-    for substream in range(5):
-        command = [
+    for substream in FFinfo.audio_stream_idx():
+        sr = FFinfo.rate(substream)
+        channels = FFinfo.channels(substream)
+        cmd = [
             'ffmpeg',
             '-i', filename,
             '-f', 's16le',
@@ -45,8 +88,9 @@ def read_stems(
             '-acodec', 'pcm_s16le',
             '-ar', str(sr),
             '-ac', str(channels),
-            '-']
-        p = sp.Popen(command, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096)
+            '-'
+        ]
+        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096)
         bytes_per_sample = np.dtype(np.int16).itemsize
         frame_size = bytes_per_sample * channels
         chunk_size = frame_size * sr  # read in 1-second chunks

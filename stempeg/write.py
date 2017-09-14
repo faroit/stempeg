@@ -30,13 +30,16 @@ class tempfile:
 
 
 def write_stems(
-    audio, filename, sr,
-    codec='libfdk_aac', bitrate=256000,
+    audio,
+    filename,
+    sr,
+    titles=None,
+    codec='libfdk_aac',
+    bitrate=256000,
     ffmpeg_params=None
 ):
 
     audio = (2**(15)*audio).astype('int16')
-
     with contextlib.nested(*[tempfile()] * audio.shape[0]) as x:
         for k, i in enumerate(x):
             scipy.io.wavfile.write(i, sr, audio[k])
@@ -55,6 +58,14 @@ def write_stems(
             list(chain.from_iterable(
                 [['-map', str(k)] for k, _ in enumerate(x)]
             )) +
+            (
+                list(chain.from_iterable(
+                    [
+                        ["-metadata:s:%d" % k, "title=%s" % title]
+                        for k, title in enumerate(titles)
+                    ]
+                )) if titles is not None else []
+            ) +
             [
                 '-vn',
                 '-acodec', codec,
