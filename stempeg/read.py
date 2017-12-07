@@ -42,10 +42,9 @@ def read_info(
         '-print_format', 'json',
         '-show_format', '-show_streams',
     ]
-    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=DEVNULL)
-    with p.stdout as stdout:
-        info = json.load(stdout)
 
+    out = sp.check_output(cmd)
+    info = json.loads(out)
     return info
 
 
