@@ -44,7 +44,7 @@ def read_info(
     ]
 
     out = sp.check_output(cmd)
-    info = json.loads(out)
+    info = json.loads(out.decode('ascii'))
     return info
 
 
