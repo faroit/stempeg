@@ -1,8 +1,22 @@
 import subprocess as sp
 import os
 import scipy.io.wavfile
-import contextlib
 from itertools import chain
+
+try:
+    from contextlib import nested  # Python 2
+except ImportError:
+    from contextlib import ExitStack, contextmanager
+
+    @contextmanager
+    def nested(*contexts):
+        """
+        Reimplementation of nested in python 3.
+        """
+        with ExitStack() as stack:
+            for ctx in contexts:
+                stack.enter_context(ctx)
+            yield contexts
 
 
 class tempfile:
@@ -40,9 +54,9 @@ def write_stems(
 ):
 
     audio = (2**(15)*audio).astype('int16')
-    with contextlib.nested(*[tempfile()] * audio.shape[0]) as x:
+    with nested(*[tempfile()] * audio.shape[0]) as x:
         for k, i in enumerate(x):
-            scipy.io.wavfile.write(i, sr, audio[k])
+            scipy.io.wavfile.write(i.name, sr, audio[k])
 
         cmd = (
             [
@@ -53,7 +67,7 @@ def write_stems(
                 '-ac', "%d" % 2
             ] +
             list(chain.from_iterable(
-                [['-i', i] for i in x]
+                [['-i', i.name] for i in x]
             )) +
             list(chain.from_iterable(
                 [['-map', str(k)] for k, _ in enumerate(x)]
