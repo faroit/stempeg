@@ -91,7 +91,7 @@ def read_stems(
         substreams = FFinfo.audio_stream_idx()
 
     for substream in substreams:
-        sr = FFinfo.rate(substream)
+        rate = FFinfo.rate(substream)
         channels = FFinfo.channels(substream)
         cmd = [
             'ffmpeg',
@@ -99,14 +99,14 @@ def read_stems(
             '-f', 's16le',
             '-map', '0:' + str(substream),
             '-acodec', 'pcm_s16le',
-            '-ar', str(sr),
+            '-ar', str(rate),
             '-ac', str(channels),
             '-'
         ]
         p = sp.Popen(cmd, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096)
         bytes_per_sample = np.dtype(np.int16).itemsize
         frame_size = bytes_per_sample * channels
-        chunk_size = frame_size * sr  # read in 1-second chunks
+        chunk_size = frame_size * rate  # read in 1-second chunks
         raw = b''
         with p.stdout as stdout:
             while True:
@@ -120,7 +120,7 @@ def read_stems(
         if channels > 1:
             audio = audio.reshape((-1, channels)).transpose()
         if audio.size == 0:
-            return audio, sr
+            return audio, rate
         if issubclass(out_type, np.floating):
             if issubclass(np.int16, np.integer):
                 audio /= np.iinfo(np.int16).max
@@ -135,4 +135,4 @@ def read_stems(
         stems = [t[:, :min_length] for t in stems]
 
     stems = np.swapaxes(np.array(stems), 1, 2)
-    return stems, sr
+    return stems, rate
