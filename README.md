@@ -1,4 +1,5 @@
 # stempeg = stems + ffmpeg
+[![Build Status](https://travis-ci.org/faroit/stempeg.svg?branch=master)](https://travis-ci.org/faroit/stempeg)
 
 python tool to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
 Technically it is just wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multistream MP4 audio files.
@@ -35,23 +36,33 @@ pip install stempeg
 
 ## Usage
 
+There are very few freely available stem files. We [included](test/data/The Easton Ellises - Falcon 69.stem.mp4) a small test track from the Canadian rock-band _The Easton Ellises_. The band [released them](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html) under Creative Commons license CC BY-NC-SA 3.0.
+
 ### Reading stems
 
 ```python
 import stempeg
-S, sr = stempeg.read_stems(args.input)
+S, rate = stempeg.read_stems("input.stemp.mp4")
 ```
 
-`S` is the stem tensor that includes the time domain signals. The shape is `stems x samples x channels`.
+`S` is the stem tensor that includes the time domain signals scaled to `[-1..1]`. The shape is `(stems, samples, channels)`.
+
+### Reading individual stem ids
+
+you can read individual substreams of the stem file by passing the corresponding stem id (starting from 0):
+
+```python
+S, rate = stempeg.read_stems("input.stem.mp4", stem_idx=[0, 1])
+```
 
 ### Writing stems
 
-__Warning__: Muxing stems using ffmpeg might lead in non conform stem. Please use MP4Box, if you need a realiable result.
+> :warning: __Warning__: Muxing stems using ffmpeg might lead to non conform stems. Please use MP4Box, if you need a reliable result.
 
 Writing stem files from a numpy tensor
 
 ```python
-stempeg.write_stems(S, "out.stem.mp4", sr=44100)
+stempeg.write_stems(S, "output.stem.mp4", rate=44100)
 ```
 
 ### Use the command line tools
@@ -60,4 +71,5 @@ stempeg.write_stems(S, "out.stem.mp4", sr=44100)
 
 
 ```bash
-stem2wav
+stem2wav tests/data/The Easton Ellises - Falcon 69.stem.mp4
+```
