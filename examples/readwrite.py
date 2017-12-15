@@ -2,6 +2,8 @@
 """
 import argparse
 import stempeg
+import numpy as np
+from os import path as op
 
 
 if __name__ == '__main__':
@@ -12,7 +14,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read stems
-    S, sr = stempeg.read_stems(args.input)
-    print(S.shape)
-    # write strems
-    stempeg.write_stems(S, "out.mp4", sr)
+    stempeg.stem2wav(args.input)

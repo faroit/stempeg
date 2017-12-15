@@ -2,6 +2,8 @@ import numpy as np
 import subprocess as sp
 import os
 import json
+import warnings
+
 DEVNULL = open(os.devnull, 'w')
 
 
@@ -44,39 +46,51 @@ def read_info(
     ]
 
     out = sp.check_output(cmd)
-    info = json.loads(out.decode('ascii'))
+    info = json.loads(out.decode('utf-8'))
     return info
 
 
 def read_stems(
     filename,
-    out_type=np.float_
+    out_type=np.float_,
+    stem_idx=None
 ):
     """Read STEMS format into numpy Tensor
 
     Parameters
     ----------
     filename : str
-        Filename of STEMS format. Typically `filename.stem.mp4`
+        Filename of STEMS format. Typically `filename.stem.mp4`.
     out_type : type
         Output type. Defaults to 32bit float aka `np.float32`.
+    stem_idx : int
+        Stem ID (Stream ID) to read. Defaults to `None`, which reads all
+        available stems.
+
 
     Returns
     -------
     stems : array_like
         The tensor of Matrix of stems. The date shape is formatted as
-        :code:`stems x samples x channels`. In case of a `mono=True`,
-        the shape is :code:`stems x samples x 1`.
+        :code:`stems x samples x channels`.
 
     Notes
     -----
-    ...
+
+    Input is expected to be in 16bit/44.1 kHz
+
     """
 
     FFinfo = FFMPEGInfo(filename)
 
     stems = []
-    for substream in FFinfo.audio_stream_idx():
+
+    if stem_idx is not None:
+        substreams = stem_idx
+    else:
+        substreams = FFinfo.audio_stream_idx()
+
+    for substream in substreams:
         sr = FFinfo.rate(substream)
         channels = FFinfo.channels(substream)
         cmd = [
@@ -102,6 +116,7 @@ def read_stems(
                 else:
                     break
         audio = np.fromstring(raw, dtype=np.int16).astype(out_type)
+
         if channels > 1:
             audio = audio.reshape((-1, channels)).transpose()
         if audio.size == 0:
@@ -111,6 +126,13 @@ def read_stems(
                 audio /= np.iinfo(np.int16).max
 
         stems.append(audio)
+
+    # check if all stems have the same duration
+    stem_durations = np.array([t.shape[1] for t in stems])
+    if (stem_durations == stem_durations[0]).all():
+        warnings.warn("Warning.......Stems differ in length and were shortend")
+        min_length = np.min(stem_durations)
+        stems = [t[:, :min_length] for t in stems]
 
     stems = np.swapaxes(np.array(stems), 1, 2)
     return stems, sr

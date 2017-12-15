@@ -1,6 +1,6 @@
 import subprocess as sp
 import os
-import scipy.io.wavfile
+import soundfile as sf
 from itertools import chain
 
 try:
@@ -53,10 +53,9 @@ def write_stems(
     ffmpeg_params=None
 ):
 
-    audio = (2**(15)*audio).astype('int16')
     with nested(*[tempfile()] * audio.shape[0]) as x:
         for k, i in enumerate(x):
-            scipy.io.wavfile.write(i.name, sr, audio[k])
+            sf.write(i.name, audio[k], sr)
 
         cmd = (
             [
@@ -85,7 +84,7 @@ def write_stems(
                 '-acodec', codec,
                 '-ar', "%d" % sr,
                 '-strict', '-2',
-                '-loglevel', 'panic',
+                '-loglevel', 'panic'
             ] +
             (['-ab', str(bitrate)] if (bitrate is not None) else []) +
             (ffmpeg_params if ffmpeg_params else []) +

@@ -10,7 +10,7 @@ if __name__ == "__main__":
         version='0.1.0',
 
         # Description
-        description='Read and write audio STEMS',
+        description='Read and write multichannel audio from STEM',
 
         # Your contact information
         author='Fabian-Robert Stoeter',
@@ -41,4 +41,8 @@ if __name__ == "__main__":
             'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis'
         ],
         zip_safe=True,
+
+        entry_points={'console_scripts': [
+            'stem2wav=stempeg:cli',
+        ]}
     )
