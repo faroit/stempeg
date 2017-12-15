@@ -27,9 +27,14 @@ if __name__ == "__main__":
         # computations stack
         install_requires=[
             'numpy>=1.6',
-            'scipy',
             'soundfile'
         ],
+
+        extras_require={
+            'tests': [
+                'pytest',
+            ],
+        },
 
         classifiers=[
             'Development Status :: 4 - Beta',

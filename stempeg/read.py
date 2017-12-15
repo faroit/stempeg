@@ -71,7 +71,7 @@ def read_stems(
     Returns
     -------
     stems : array_like
-        The tensor of Matrix of stems. The date shape is formatted as
+        The tensor of Matrix of stems. The data shape is formatted as
         :code:`stems x samples x channels`.
 
     Notes
@@ -129,7 +129,7 @@ def read_stems(
 
     # check if all stems have the same duration
     stem_durations = np.array([t.shape[1] for t in stems])
-    if (stem_durations == stem_durations[0]).all():
+    if not (stem_durations == stem_durations[0]).all():
         warnings.warn("Warning.......Stems differ in length and were shortend")
         min_length = np.min(stem_durations)
         stems = [t[:, :min_length] for t in stems]
