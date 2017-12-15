@@ -1,10 +1,5 @@
 sudo: false
 
-addons:
-  apt:
-    packages:
-    - stempeg
-
 cache:
   directories:
   - $HOME/env
