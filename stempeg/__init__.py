@@ -52,7 +52,7 @@ def stem2wav(
     outdir=None,
     idx=None
 ):
-    S, sr = read_stems(stems_file, stem_idx=idx)
+    S, sr = read_stems(stems_file, stem_id=idx)
 
     rootpath, filename = op.split(stems_file)
 

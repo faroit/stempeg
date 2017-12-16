@@ -53,7 +53,7 @@ def read_info(
 def read_stems(
     filename,
     out_type=np.float_,
-    stem_idx=None
+    stem_id=None
 ):
     """Read STEMS format into numpy Tensor
 
@@ -63,7 +63,7 @@ def read_stems(
         Filename of STEMS format. Typically `filename.stem.mp4`.
     out_type : type
         Output type. Defaults to 32bit float aka `np.float32`.
-    stem_idx : int
+    stem_id : int
         Stem ID (Stream ID) to read. Defaults to `None`, which reads all
         available stems.
 
@@ -85,8 +85,8 @@ def read_stems(
 
     stems = []
 
-    if stem_idx is not None:
-        substreams = stem_idx
+    if stem_id is not None:
+        substreams = stem_id
     else:
         substreams = FFinfo.audio_stream_idx()
 

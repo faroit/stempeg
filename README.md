@@ -52,7 +52,7 @@ S, rate = stempeg.read_stems("input.stemp.mp4")
 you can read individual substreams of the stem file by passing the corresponding stem id (starting from 0):
 
 ```python
-S, rate = stempeg.read_stems("input.stem.mp4", stem_idx=[0, 1])
+S, rate = stempeg.read_stems("input.stem.mp4", stem_id=[0, 1])
 ```
 
 ### Writing stems
