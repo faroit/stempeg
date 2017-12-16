@@ -90,6 +90,9 @@ def read_stems(
     else:
         substreams = FFinfo.audio_stream_idx()
 
+    if not isinstance(substreams, list):
+        substreams = [substreams]
+
     for substream in substreams:
         rate = FFinfo.rate(substream)
         channels = FFinfo.channels(substream)
@@ -103,7 +106,7 @@ def read_stems(
             '-ac', str(channels),
             '-'
         ]
-        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096)
+        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=DEVNULL, bufsize=-1)
         bytes_per_sample = np.dtype(np.int16).itemsize
         frame_size = bytes_per_sample * channels
         chunk_size = frame_size * rate  # read in 1-second chunks
@@ -134,5 +137,5 @@ def read_stems(
         min_length = np.min(stem_durations)
         stems = [t[:, :min_length] for t in stems]
 
-    stems = np.swapaxes(np.array(stems), 1, 2)
+    stems = np.squeeze(np.swapaxes(np.array(stems), 1, 2))
     return stems, rate
