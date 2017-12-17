@@ -99,7 +99,6 @@ def read_stems(
         for t in substreams
     ]
     for tmp_id, stem in enumerate(substreams):
-        print("read stem")
         rate = FFinfo.rate(stem)
         channels = FFinfo.channels(stem)
         cmd = [
@@ -118,7 +117,6 @@ def read_stems(
         # read wav files
         audio, rate = sf.read(tmps[tmp_id].name)
         os.remove(tmps[tmp_id].name)
-        print(audio.shape)
         stems.append(audio)
 
     # check if all stems have the same duration
