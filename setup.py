@@ -9,6 +9,10 @@ if __name__ == "__main__":
         # Version
         version='0.1.1',
 
+        url='http://github.com/faroit/stempeg',
+
+        download_url='http://github.com/faroit/stempeg',
+
         # Description
         description='Read and write stem multistream audio files',
 

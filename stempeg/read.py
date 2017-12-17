@@ -10,7 +10,9 @@ DEVNULL = open(os.devnull, 'w')
 
 
 class FFMPEGInfo(object):
-    """docstring for FFMPEGInfo."""
+    """Extracts FFMPEG info as json
+    """
+
     def __init__(self, filename):
         super(FFMPEGInfo, self).__init__()
         self.filename = filename
