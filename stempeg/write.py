@@ -11,7 +11,7 @@ def write_stems(
     bitrate=256000,
     ffmpeg_params=None
 ):
-    """Write STEMS format from numpy Tensor
+    """Write stems from numpy Tensor
 
     Parameters
     ----------

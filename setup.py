@@ -7,10 +7,10 @@ if __name__ == "__main__":
         name='stempeg',
 
         # Version
-        version='0.1.0',
+        version='0.1.1',
 
         # Description
-        description='Read and write multichannel audio from STEM',
+        description='Read and write stem multistream audio files',
 
         # Your contact information
         author='Fabian-Robert Stoeter',
