@@ -19,7 +19,7 @@ conda install -c conda-forge ffmpeg
 ```
 
 Note that this version does _not_ include `fdk-aac` and therefore is currently only suitable to decode stems.
-You can install ffmpeg with fdk-aac support manually as following:
+You can install ffmpeg with fdk-aac support manually as follows:
 
 * Docker: `docker pull jrottenberg/ffmpeg`
 * Mac: use homebrew: `brew install ffmpeg --with-fdk-aac`
@@ -36,7 +36,7 @@ pip install stempeg
 
 ## Usage
 
-There are very few freely available stem files. We [included](test/data/The Easton Ellises - Falcon 69.stem.mp4) a small test track from the Canadian rock-band _The Easton Ellises_. The band [released them](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html) under Creative Commons license CC BY-NC-SA 3.0.
+There are very few freely available stem files. We [included](https://raw.githubusercontent.com/faroit/stempeg/master/tests/data/The%20Easton%20Ellises%20-%20Falcon%2069.stem.mp4) a small test track from the Canadian rock-band _The Easton Ellises_. The band [released them](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html) under Creative Commons license CC BY-NC-SA 3.0.
 
 ### Reading stems
 
