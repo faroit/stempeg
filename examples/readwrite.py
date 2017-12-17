@@ -14,4 +14,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read stems
-    stempeg.stem2wav(args.input)
+    stems, rate = stempeg.read_stems(args.input)
+    print(stems.shape)
+    stempeg.write_stems(stems, "stems.mp4")
+    stems2, rate = stempeg.read_stems("stems.mp4")
+    print(stems2.shape)

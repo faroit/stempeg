@@ -27,7 +27,7 @@ if __name__ == "__main__":
         # computations stack
         install_requires=[
             'numpy>=1.6',
-            'soundfile'
+            'soundfile>=0.9.0'
         ],
 
         extras_require={

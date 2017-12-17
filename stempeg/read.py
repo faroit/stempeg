@@ -3,6 +3,8 @@ import subprocess as sp
 import os
 import json
 import warnings
+import tempfile as tmp
+import soundfile as sf
 
 DEVNULL = open(os.devnull, 'w')
 
@@ -72,7 +74,7 @@ def read_stems(
     -------
     stems : array_like
         The tensor of Matrix of stems. The data shape is formatted as
-        :code:`stems x samples x channels`.
+        :code:`stems x channels x samples`.
 
     Notes
     -----
@@ -83,8 +85,6 @@ def read_stems(
 
     FFinfo = FFMPEGInfo(filename)
 
-    stems = []
-
     if stem_id is not None:
         substreams = stem_id
     else:
@@ -93,49 +93,41 @@ def read_stems(
     if not isinstance(substreams, list):
         substreams = [substreams]
 
-    for substream in substreams:
-        rate = FFinfo.rate(substream)
-        channels = FFinfo.channels(substream)
+    stems = []
+    tmps = [
+        tmp.NamedTemporaryFile(delete=False, suffix='.wav')
+        for t in substreams
+    ]
+    for tmp_id, stem in enumerate(substreams):
+        print("read stem")
+        rate = FFinfo.rate(stem)
+        channels = FFinfo.channels(stem)
         cmd = [
             'ffmpeg',
+            '-y',
+            '-vn',
             '-i', filename,
-            '-f', 's16le',
-            '-map', '0:' + str(substream),
+            '-map', '0:' + str(stem),
             '-acodec', 'pcm_s16le',
             '-ar', str(rate),
             '-ac', str(channels),
-            '-'
+            '-loglevel', 'panic',
+            tmps[tmp_id].name
         ]
-        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=DEVNULL, bufsize=-1)
-        bytes_per_sample = np.dtype(np.int16).itemsize
-        frame_size = bytes_per_sample * channels
-        chunk_size = frame_size * rate  # read in 1-second chunks
-        raw = b''
-        with p.stdout as stdout:
-            while True:
-                data = stdout.read(chunk_size)
-                if data:
-                    raw += data
-                else:
-                    break
-        audio = np.fromstring(raw, dtype=np.int16).astype(out_type)
-
-        if channels > 1:
-            audio = audio.reshape((-1, channels)).transpose()
-        if audio.size == 0:
-            return audio, rate
-        if issubclass(out_type, np.floating):
-            if issubclass(np.int16, np.integer):
-                audio /= np.iinfo(np.int16).max
-
+        sp.call(cmd)
+        # read wav files
+        audio, rate = sf.read(tmps[tmp_id].name)
+        os.remove(tmps[tmp_id].name)
+        print(audio.shape)
         stems.append(audio)
 
     # check if all stems have the same duration
-    stem_durations = np.array([t.shape[1] for t in stems])
+    stem_durations = np.array([t.shape[0] for t in stems])
     if not (stem_durations == stem_durations[0]).all():
         warnings.warn("Warning.......Stems differ in length and were shortend")
         min_length = np.min(stem_durations)
-        stems = [t[:, :min_length] for t in stems]
+        stems = [t[:min_length, :] for t in stems]
 
-    stems = np.squeeze(np.swapaxes(np.array(stems), 1, 2))
+    stems = np.array(stems)
+    stems = np.squeeze(stems)
     return stems, rate
