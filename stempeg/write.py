@@ -17,7 +17,7 @@ def check_available_aac_encoders():
 
     cmd = [
         'ffmpeg',
-        '-v', 'quiet',
+        '-v', 'error',
         '-codecs'
     ]
 
@@ -102,7 +102,7 @@ def write_stems(
             '-acodec', codec,
             '-ar', "%d" % rate,
             '-strict', '-2',
-            '-loglevel', 'panic'
+            '-loglevel', 'error'
         ] +
         (['-ab', str(bitrate)] if (bitrate is not None) else []) +
         (ffmpeg_params if ffmpeg_params else []) +

@@ -47,7 +47,7 @@ def read_info(
     cmd = [
         'ffprobe',
         filename,
-        '-v', 'quiet',
+        '-v', 'error',
         '-print_format', 'json',
         '-show_format', '-show_streams',
     ]
@@ -115,7 +115,7 @@ def read_stems(
             '-acodec', 'pcm_s16le',
             '-ar', str(rate),
             '-ac', str(channels),
-            '-loglevel', 'panic',
+            '-loglevel', 'error',
             tmps[tmp_id].name
         ]
         sp.call(cmd)
