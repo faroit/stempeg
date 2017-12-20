@@ -7,7 +7,7 @@ import re
 
 
 def check_available_aac_encoders():
-    """Extracts FFMPEG info and returns info as json
+    """Returns the available AAC encoders
 
     Returns
     ----------
@@ -27,9 +27,11 @@ def check_available_aac_encoders():
         output.splitlines() if "AAC (Advanced Audio Coding)" in str(x)
     ][0]
     hay = aac_codecs.decode('ascii')
-    codec_list = re.findall('\(encoders: ([^\)]*) \)', hay)[0].split(" ")
-
-    return codec_list
+    match = re.findall('\(encoders: ([^\)]*) \)', hay)
+    if match is not None:
+        return match[0].split(" ")
+    else:
+        return None
 
 
 def write_stems(

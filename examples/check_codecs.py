@@ -5,5 +5,5 @@ import stempeg
 
 if __name__ == '__main__':
     # read stems
-    Info = stempeg.check_available_codecs()
+    Info = stempeg.check_available_aac_encoders()
     print(Info)
