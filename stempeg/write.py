@@ -69,8 +69,13 @@ def write_stems(
     """
     if codec is None:
         avail = check_available_aac_encoders()
-        if 'libfdk_aac' in avail:
-            codec = 'libfdk_aac'
+
+        if avail is not None:
+            if 'libfdk_aac' in avail:
+                codec = 'libfdk_aac'
+            else:
+                codec = 'aac'
+                warnings.warn("For better quality, please install libfdc_aac")
         else:
             codec = 'aac'
             warnings.warn("For better quality, please install libfdc_aac")
