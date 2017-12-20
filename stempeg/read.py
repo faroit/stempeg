@@ -10,7 +10,7 @@ DEVNULL = open(os.devnull, 'w')
 
 
 class FFMPEGInfo(object):
-    """Extracts FFMPEG info as json
+    """Abstract FFMPEGInfo Object
     """
 
     def __init__(self, filename):
@@ -41,6 +41,9 @@ class FFMPEGInfo(object):
 def read_info(
     filename
 ):
+    """Extracts FFMPEG info and returns info as json
+    """
+
     cmd = [
         'ffprobe',
         filename,

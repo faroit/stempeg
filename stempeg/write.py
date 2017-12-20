@@ -1,14 +1,43 @@
 import subprocess as sp
 import soundfile as sf
+import tempfile as tmp
 from itertools import chain
+import warnings
+import re
+
+
+def check_available_aac_encoders():
+    """Extracts FFMPEG info and returns info as json
+
+    Returns
+    ----------
+    codecs : list(str)
+        List of available encoder codecs
+    """
+
+    cmd = [
+        'ffmpeg',
+        '-v', 'quiet',
+        '-codecs'
+    ]
+
+    output = sp.check_output(cmd)
+    aac_codecs = [
+        x for x in
+        output.splitlines() if "AAC (Advanced Audio Coding)" in str(x)
+    ][0]
+    hay = aac_codecs.decode('ascii')
+    codec_list = re.findall('\(encoders: ([^\)]*) \)', hay)[0].split(" ")
+
+    return codec_list
 
 
 def write_stems(
     audio,
     filename,
     rate=44100,
-    codec='libfdk_aac',
     bitrate=256000,
+    codec=None,
     ffmpeg_params=None
 ):
     """Write stems from numpy Tensor
@@ -24,6 +53,9 @@ def write_stems(
         Output samplerate. Defaults to 44100 Hz.
     bitrate : int
         AAC Bitrate in Bits per second. Defaults to 256 Kbit/s
+    codec : str
+        AAC codec used. Defaults to `None` which automatically selects
+        either `libfdk_aac` or `aac` in that order, determined by availability.
     ffmpeg_params : list(str)
         List of additional ffmpeg parameters
 
@@ -33,7 +65,14 @@ def write_stems(
     Output is written as 16bit/44.1 kHz
 
     """
-    import tempfile as tmp
+    if codec is None:
+        avail = check_available_aac_encoders()
+        if 'libfdk_aac' in avail:
+            codec = 'libfdk_aac'
+        else:
+            codec = 'aac'
+            warnings.warn("For better quality, please install libfdc_aac")
+
     tmps = [
         tmp.NamedTemporaryFile(delete=False, suffix='.wav')
         for t in range(audio.shape[0])
