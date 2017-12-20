@@ -28,7 +28,7 @@ def check_available_aac_encoders():
     ][0]
     hay = aac_codecs.decode('ascii')
     match = re.findall('\(encoders: ([^\)]*) \)', hay)
-    if match is not None:
+    if match:
         return match[0].split(" ")
     else:
         return None
