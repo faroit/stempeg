@@ -8,7 +8,7 @@ from os import path as op
 import soundfile as sf
 import argparse
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 def cli(inargs=None):

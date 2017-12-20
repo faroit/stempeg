@@ -7,7 +7,7 @@ if __name__ == "__main__":
         name='stempeg',
 
         # Version
-        version='0.1.1',
+        version='0.1.2',
 
         url='http://github.com/faroit/stempeg',
 
