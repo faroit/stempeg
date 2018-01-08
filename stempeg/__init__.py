@@ -3,12 +3,42 @@ from .read import read_info
 from .write import write_stems
 from .write import check_available_aac_encoders
 
+
+import re
 import os
+import subprocess as sp
 from os import path as op
 import soundfile as sf
 import argparse
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
+
+
+def ffmpeg_version():
+    """Returns the available ffmpeg version
+
+    Returns
+    ----------
+    version : str
+        version number as string
+    """
+
+    cmd = [
+        'ffmpeg',
+        '-version'
+    ]
+
+    output = sp.check_output(cmd)
+    aac_codecs = [
+        x for x in
+        output.splitlines() if "ffmpeg version " in str(x)
+    ][0]
+    hay = aac_codecs.decode('ascii')
+    match = re.findall('ffmpeg version (\d+\.)?(\d+\.)?(\*|\d+)', hay)
+    if match:
+        return "".join(match[0])
+    else:
+        return None
 
 
 def cli(inargs=None):
