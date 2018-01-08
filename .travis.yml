@@ -1,19 +1,24 @@
 sudo: false
 
 cache:
-  directories:
-  - $HOME/env
+    directories:
+        - $HOME/env
 
 language: python
 
 notifications:
-  email: false
+    email: false
 
 python:
     - "2.7"
     - "3.4"
     - "3.5"
     - "3.6"
+
+env:
+    - FFMPEG_VERSION=3.4
+    - FFMPEG_VERSION=2.6.8
+    - FFMPEG_VERSION=3.2.4
 
 before_install:
     - bash .travis_dependencies.sh
@@ -34,4 +39,4 @@ after_success:
     - pip uninstall -y stempeg
 
 after_failure:
-- pip uninstall -y stempeg
+    - pip uninstall -y stempeg
