@@ -40,7 +40,7 @@ There are very few freely available stem files. We [included](https://raw.github
 
 ```python
 import stempeg
-S, rate = stempeg.read_stems("input.stemp.mp4")
+S, rate = stempeg.read_stems("input.stem.mp4")
 ```
 
 `S` is the stem tensor that includes the time domain signals scaled to `[-1..1]`. The shape is `(stems, samples, channels)`.
