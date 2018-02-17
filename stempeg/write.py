@@ -4,6 +4,7 @@ import tempfile as tmp
 from itertools import chain
 import warnings
 import re
+import numpy as np
 
 
 def check_available_aac_encoders():
@@ -84,6 +85,12 @@ def write_stems(
         tmp.NamedTemporaryFile(delete=False, suffix='.wav')
         for t in range(audio.shape[0])
     ]
+
+    if audio.shape[1] % 1024 != 0:
+        warnings.warn(
+            "Number of samples does not divide by 1024, be aware that "
+            "the AAC encoder add silence to the input signal"
+        )
 
     for k in range(audio.shape[0]):
         sf.write(tmps[k].name, audio[k], rate)

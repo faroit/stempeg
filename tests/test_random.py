@@ -1,12 +1,20 @@
 import stempeg
 import numpy as np
+import pytest
 
 
-def test_shape():
-    R = np.random.random((5, 4096, 2))
+@pytest.fixture(params=[1024, 2048, 12313, 100000])
+def nb_samples(request):
+    return request.param
+
+
+def test_shape(nb_samples):
+    R = np.random.random((5, nb_samples, 2))
     stempeg.write_stems(R, "./random.stem.mp4")
     S, rate = stempeg.read_stems(
         "./random.stem.mp4"
     )
 
-    assert S.shape == R.shape
+    assert S.shape[0] == R.shape[0]
+    assert S.shape[2] == R.shape[2]
+    assert S.shape[1] % 1024 == 0
