@@ -1,5 +1,7 @@
 # stempeg = stems + ffmpeg
 [![Build Status](https://travis-ci.org/faroit/stempeg.svg?branch=master)](https://travis-ci.org/faroit/stempeg)
+[![Latest Version](https://img.shields.io/pypi/v/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 
 python tool to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
 Technically it is just wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multistream MP4 audio files.
