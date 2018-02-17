@@ -1,7 +1,8 @@
 import stempeg
+import pytest
 
 
-def test_shape():
+def test_write():
     S, rate = stempeg.read_stems(
         "tests/data/The Easton Ellises - Falcon 69.stem.mp4"
     )

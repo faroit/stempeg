@@ -4,7 +4,7 @@ import tempfile as tmp
 from itertools import chain
 import warnings
 import re
-import numpy as np
+import stempeg
 
 
 def check_available_aac_encoders():
@@ -68,6 +68,11 @@ def write_stems(
     Output is written as 16bit/44.1 kHz
 
     """
+    if int(stempeg.ffmpeg_version()[0]) < 3:
+        warnings.warn(
+            "Writing STEMS with FFMPEG version < 3 is unsupported", UserWarning
+        )
+
     if codec is None:
         avail = check_available_aac_encoders()
 
