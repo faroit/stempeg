@@ -121,6 +121,7 @@ def read_stems(
         sp.call(cmd)
         # read wav files
         audio, rate = sf.read(tmps[tmp_id].name)
+        tmps[tmp_id].close()
         os.remove(tmps[tmp_id].name)
         stems.append(audio)
 
