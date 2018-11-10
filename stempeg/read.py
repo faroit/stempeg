@@ -133,5 +133,5 @@ def read_stems(
         stems = [t[:min_length, :] for t in stems]
 
     stems = np.array(stems)
-    stems = np.squeeze(stems)
+    stems = np.squeeze(stems).astype(out_type)
     return stems, rate

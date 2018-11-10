@@ -1,16 +1,17 @@
 # stempeg = stems + ffmpeg
+
 [![Build Status](https://travis-ci.org/faroit/stempeg.svg?branch=master)](https://travis-ci.org/faroit/stempeg)
 [![Latest Version](https://img.shields.io/pypi/v/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 
 python tool to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
-Technically it is just wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multistream MP4 audio files.
+Technically it is just wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multi stream MP4 audio files.
 
 ## Installation
 
-### 1. Installation of FFMPEG Library
+### 1. Installation of ffmpeg Library
 
-_stempeg_ relies on [ffmpeg](https://www.ffmpeg.org/) to encode and decode the stems file format.
+_stempeg_ relies on [ffmpeg](https://www.ffmpeg.org/) (version >= 3.2) to encode and decode the stems file format. 
 
 The Installation if ffmpeg differ among operating systems. If you use [Anaconda](https://anaconda.org/anaconda/python) you can install ffmpeg on Windows/Mac/Linux using the following command:
 
