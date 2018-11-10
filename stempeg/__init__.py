@@ -10,7 +10,7 @@ from os import path as op
 import soundfile as sf
 import argparse
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 
 def ffmpeg_version():
