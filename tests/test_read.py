@@ -8,6 +8,18 @@ def dtype(request):
     return request.param
 
 
+def test_stem_id():
+    S, rate = stempeg.read_stems(
+        "tests/data/The Easton Ellises - Falcon 69.stem.mp4"
+    )
+    for k in range(S.shape[0]):
+        Sk, rate = stempeg.read_stems(
+            "tests/data/The Easton Ellises - Falcon 69.stem.mp4",
+            stem_id=k
+        )
+        assert Sk.ndim == 2
+
+
 def test_shape():
     S, rate = stempeg.read_stems(
         "tests/data/The Easton Ellises - Falcon 69.stem.mp4"
