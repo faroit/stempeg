@@ -28,7 +28,7 @@ def check_available_aac_encoders():
         output.splitlines() if "AAC (Advanced Audio Coding)" in str(x)
     ][0]
     hay = aac_codecs.decode('ascii')
-    match = re.findall('\(encoders: ([^\)]*) \)', hay)
+    match = re.findall(r'\(encoders: ([^\)]*) \)', hay)
     if match:
         return match[0].split(" ")
     else:
