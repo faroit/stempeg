@@ -4,8 +4,8 @@
 [![Latest Version](https://img.shields.io/pypi/v/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 
-python tool to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
-Technically it is just wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multi stream MP4 audio files.
+python package to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
+Technically, STEMs are MP4 files with multiple audio streams and additional metatdata, hence _stempeg_ wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multi stream MP4 audio files.
 
 ## Installation
 
@@ -58,17 +58,18 @@ S, rate = stempeg.read_stems("input.stem.mp4", stem_id=[0, 1])
 
 ### Writing stems
 
-> :warning: __Warning__: Muxing stems using ffmpeg might lead to non conform stems. Please use MP4Box, if you need a reliable result.
-
 Writing stem files from a numpy tensor
 
 ```python
 stempeg.write_stems(S, "output.stem.mp4", rate=44100)
 ```
 
+> :warning: __Warning__: Muxing stems using _ffmpeg_ might lead to non-conform stem files. Please use MP4Box, if you need a reliable result.
+
+
 ### Use the command line tools
 
-#### Convert a stem to wav files
+_stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles
 
 
 ```bash
