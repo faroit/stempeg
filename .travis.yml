@@ -1,18 +1,19 @@
+---
+cache: pip
+
 language: python
 
 notifications:
     email: false
 
 matrix:
-  include:
-    - python: 2.7
-    - python: 3.4
-    - python: 3.5
-    - python: 3.6
-    - python: 3.7
-      dist: xenial
-        sudo: true
+    include:
+        - python: 3.5
+        - python: 3.6
+        - python: 3.7
+          dist: xenial
 
+sudo: true
 
 env:
     - FFMPEG_VERSION=4.0.2
