@@ -14,9 +14,9 @@ conda_create ()
     deps='pip pytest'
     
     if $TRAVIS_PYTHON_VERSION == "3.7-dev":
-        PYTHON_VERSION = "3.7"
+        export PYTHON_VERSION="3.7"
     else:
-        PYTHON_VERSION = $TRAVIS_PYTHON_VERSION
+        export PYTHON_VERSION="$TRAVIS_PYTHON_VERSION"
 
     conda create -q -n $ENV_NAME "python=$PYTHON_VERSION" $deps
     conda update --all
