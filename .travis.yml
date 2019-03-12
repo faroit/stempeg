@@ -1,9 +1,7 @@
-cache: pip
-
 language: python
 
 notifications:
-    email: true
+    email: false
 
 matrix:
   include:
