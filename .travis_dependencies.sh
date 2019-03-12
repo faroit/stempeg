@@ -12,12 +12,17 @@ conda_create ()
     conda config --add channels pypi
     conda info -a
     deps='pip pytest'
+    
+    if $TRAVIS_PYTHON_VERSION == "3.7-dev":
+        PYTHON_VERSION = "3.7"
+    else:
+        PYTHON_VERSION = $TRAVIS_PYTHON_VERSION
 
-    conda create -q -n $ENV_NAME "python=$TRAVIS_PYTHON_VERSION" $deps
+    conda create -q -n $ENV_NAME "python=$PYTHON_VERSION" $deps
     conda update --all
 }
 
-src="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION"
+src="$HOME/env/miniconda$PYTHON_VERSION"
 if [ ! -d "$src" ]; then
     mkdir -p $HOME/env
     pushd $HOME/env
@@ -34,8 +39,6 @@ if [ ! -d "$src" ]; then
         source activate $ENV_NAME
 
         conda install -c conda-forge ffmpeg==$FFMPEG_VERSION
-
-        pip install python-coveralls
 
         source deactivate
     popd
