@@ -27,11 +27,11 @@ class Info(object):
 
     @property
     def nb_samples_streams(self):
-        return [self.samples(idx) for idx in enumerate(self.json_info['streams'])]
+        return [self.samples(k) for k, stream in enumerate(self.json_info['streams'])]
 
     @property
     def duration_streams(self):
-        return [self.duration(idx) for idx in enumerate(self.json_info['streams'])]
+        return [self.duration(k) for k, stream in enumerate(self.json_info['streams'])]
 
     def audio_stream_idx(self):
         return [

@@ -8,7 +8,7 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=[0, 1, 2])
+@pytest.fixture(params=[0, 1, 2, 100])
 def start(request):
     return request.param
 
@@ -40,12 +40,22 @@ def test_shape():
 
 
 def test_duration(start, duration):
-    S, rate = stempeg.read_stems("tests/data/The Easton Ellises - Falcon 69.stem.mp4", 
-        start=start, 
-        duration=duration
-    )
-    if duration is not None:
-        assert S.shape[1] == duration * rate
+    fp = "tests/data/The Easton Ellises - Falcon 69.stem.mp4"
+    info = stempeg.Info(fp)
+    if start > min(info.duration_streams):
+        with pytest.raises(IndexError):
+            S, rate = stempeg.read_stems(
+                fp,
+                start=start,
+                duration=duration
+            )
+    else:
+        S, rate = stempeg.read_stems(fp,
+            start=start,
+            duration=duration
+        )
+        if duration is not None:
+            assert S.shape[1] == duration * rate
 
 
 def test_outtype(dtype):

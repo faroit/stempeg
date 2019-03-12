@@ -12,5 +12,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read stems
-    Info = stempeg.read_info(args.input)
-    print(Info)
+    i = stempeg.Info(args.input)

@@ -1,5 +1,6 @@
 from .read import read_stems
 from .read import read_info
+from .read import Info
 from .write import write_stems
 from .write import check_available_aac_encoders
 
