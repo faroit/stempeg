@@ -8,6 +8,16 @@ def dtype(request):
     return request.param
 
 
+@pytest.fixture(params=[0, 1, 2])
+def start(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 0.5, 1, 2])
+def duration(request):
+    return request.param
+
+
 def test_stem_id():
     S, rate = stempeg.read_stems(
         "tests/data/The Easton Ellises - Falcon 69.stem.mp4"
@@ -27,6 +37,15 @@ def test_shape():
     assert S.shape[0] == 5
     assert ((S.shape[1] % 1024) == 0 and S.shape[1] > 200000)
     assert S.shape[2] == 2
+
+
+def test_duration(start, duration):
+    S, rate = stempeg.read_stems("tests/data/The Easton Ellises - Falcon 69.stem.mp4", 
+        start=start, 
+        duration=duration
+    )
+    if duration is not None:
+        assert S.shape[1] == duration * rate
 
 
 def test_outtype(dtype):

@@ -60,7 +60,9 @@ def read_info(
 def read_stems(
     filename,
     out_type=np.float_,
-    stem_id=None
+    stem_id=None,
+    start=0,
+    duration=None
 ):
     """Read STEMS format into numpy Tensor
 
@@ -73,7 +75,11 @@ def read_stems(
     stem_id : int
         Stem ID (Stream ID) to read. Defaults to `None`, which reads all
         available stems.
-
+    start : float
+        Start position (seek) in seconds, defaults to 0.
+    duration : float
+        Read `duration` seconds. End position then is `start + duration`.
+        Defaults to `None`: read till the end.
 
     Returns
     -------
@@ -118,6 +124,14 @@ def read_stems(
             '-loglevel', 'error',
             tmps[tmp_id].name
         ]
+        if start > 0:
+            cmd.insert(3, '-ss')
+            cmd.insert(4, str(start))
+
+        if duration is not None:
+            cmd.insert(-1, '-t')
+            cmd.insert(-1, str(duration))
+
         sp.call(cmd)
         # read wav files
         audio, rate = sf.read(tmps[tmp_id].name)

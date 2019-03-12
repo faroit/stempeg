@@ -1,6 +1,7 @@
 *.mp4
 *.wav
-
+.pytest_cache/
+miniconda
 .env/
 
 #####=== OSX ===#####
