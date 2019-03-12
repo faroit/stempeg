@@ -9,12 +9,13 @@ import soundfile as sf
 DEVNULL = open(os.devnull, 'w')
 
 
-class FFMPEGInfo(object):
-    """Abstract FFMPEGInfo Object
+class Info(object):
+    """Abstract Info that holds the return of ffprobe
+    
     """
 
     def __init__(self, filename):
-        super(FFMPEGInfo, self).__init__()
+        super(Info, self).__init__()
         self.filename = filename
         self.json_info = read_info(self.filename)
 
@@ -24,6 +25,14 @@ class FFMPEGInfo(object):
             [s['codec_type'] == 'audio' for s in self.json_info['streams']]
         )
 
+    @property
+    def nb_samples_streams(self):
+        return [self.samples(k) for k, stream in enumerate(self.json_info['streams'])]
+
+    @property
+    def duration_streams(self):
+        return [self.duration(k) for k, stream in enumerate(self.json_info['streams'])]
+
     def audio_stream_idx(self):
         return [
             s['index']
@@ -31,6 +40,12 @@ class FFMPEGInfo(object):
             if s['codec_type'] == 'audio'
         ]
 
+    def samples(self, stream):
+        return self.duration(stream) * self.rate(stream)
+
+    def duration(self, stream):
+        return float(self.json_info['streams'][stream]['duration'])
+    
     def rate(self, stream):
         return int(self.json_info['streams'][stream]['sample_rate'])
 
@@ -60,7 +75,9 @@ def read_info(
 def read_stems(
     filename,
     out_type=np.float_,
-    stem_id=None
+    stem_id=None,
+    start=0,
+    duration=None
 ):
     """Read STEMS format into numpy Tensor
 
@@ -73,7 +90,11 @@ def read_stems(
     stem_id : int
         Stem ID (Stream ID) to read. Defaults to `None`, which reads all
         available stems.
-
+    start : float
+        Start position (seek) in seconds, defaults to 0.
+    duration : float
+        Read `duration` seconds. End position then is `start + duration`.
+        Defaults to `None`: read till the end.
 
     Returns
     -------
@@ -87,8 +108,7 @@ def read_stems(
     Input is expected to be in 16bit/44.1 kHz
 
     """
-
-    FFinfo = FFMPEGInfo(filename)
+    FFinfo = Info(filename)
 
     if stem_id is not None:
         substreams = stem_id
@@ -104,6 +124,9 @@ def read_stems(
         for t in substreams
     ]
     for tmp_id, stem in enumerate(substreams):
+        if FFinfo.duration(stem) < start:
+            raise IndexError('start is out of range')
+
         rate = FFinfo.rate(stem)
         channels = FFinfo.channels(stem)
         cmd = [
@@ -118,6 +141,14 @@ def read_stems(
             '-loglevel', 'error',
             tmps[tmp_id].name
         ]
+        if start > 0:
+            cmd.insert(3, '-ss')
+            cmd.insert(4, str(start))
+
+        if duration is not None:
+            cmd.insert(-1, '-t')
+            cmd.insert(-1, str(duration))
+
         sp.call(cmd)
         # read wav files
         audio, rate = sf.read(tmps[tmp_id].name)

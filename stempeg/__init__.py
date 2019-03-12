@@ -1,5 +1,6 @@
 from .read import read_stems
 from .read import read_info
+from .read import Info
 from .write import write_stems
 from .write import check_available_aac_encoders
 
@@ -10,7 +11,7 @@ from os import path as op
 import soundfile as sf
 import argparse
 
-__version__ = "0.1.4"
+__version__ = "0.2.0"
 
 
 def ffmpeg_version():
