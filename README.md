@@ -65,6 +65,15 @@ S, _ = stempeg.read_stems("input.stem.mp4", start=1, duration=1.5)
 # read from second 1.0 to second 2.5
 ```
 
+### Improve performance
+
+if `read_stems` is called repeatedly, it always does two system calls, one for getting the [file info](https://github.com/faroit/stempeg/blob/a56349d2a8297ccf5db13712fc16048029503b26/stempeg/read.py#L120) and one for the [actual reading](https://github.com/faroit/stempeg/blob/a56349d2a8297ccf5db13712fc16048029503b26/stempeg/read.py#L160).  To speed this up you could provide the `Info` object to `read_stems` if the number of streams, the number of channels and the samplerate is identical.
+
+```python
+info = stempeg.Info("input.stem.mp4")
+S, _ = stempeg.read_stems("input.stem.mp4", info=info)
+```
+
 ### Writing stems
 
 Writing stem files from a numpy tensor
