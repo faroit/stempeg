@@ -37,7 +37,6 @@ script:
     - py.test
 
 after_success:
-    - coveralls
     - pip uninstall -y stempeg
 
 after_failure:
