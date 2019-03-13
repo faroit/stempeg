@@ -35,8 +35,6 @@ if [ ! -d "$src" ]; then
 
         conda install -c conda-forge ffmpeg==$FFMPEG_VERSION
 
-        pip install python-coveralls
-
         source deactivate
     popd
 else
