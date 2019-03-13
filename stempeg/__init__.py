@@ -10,8 +10,23 @@ import subprocess as sp
 from os import path as op
 import soundfile as sf
 import argparse
+import pkg_resources
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
+
+
+def example_stem_path():
+    """Get the path to an included stem file.
+    
+    Returns
+    -------
+    filename : str
+        Path to the stem file
+    """
+    return pkg_resources.resource_filename(
+        __name__, 
+        'data/The Easton Ellises - Falcon 69.stem.mp4'
+    )
 
 
 def ffmpeg_version():
