@@ -56,6 +56,15 @@ you can read individual substreams of the stem file by passing the corresponding
 S, rate = stempeg.read_stems("input.stem.mp4", stem_id=[0, 1])
 ```
 
+### Read excerpts (set seek position)
+
+to read an excerpt from the stem instead of the full file, you can provide start (`start`) and duration (`duration`) in seconds to `read_stems`:
+
+```python
+S, _ = stempeg.read_stems("input.stem.mp4", start=1, duration=1.5)
+# read from second 1.0 to second 2.5
+```
+
 ### Writing stems
 
 Writing stem files from a numpy tensor
@@ -69,9 +78,9 @@ stempeg.write_stems(S, "output.stem.mp4", rate=44100)
 
 ### Use the command line tools
 
-_stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles
+_stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles. The `-s` switch sets the start, the `-t` switch sets the duration.
 
 
 ```bash
-stem2wav tests/data/The Easton Ellises - Falcon 69.stem.mp4
+stem2wav tests/data/The Easton Ellises - Falcon 69.stem.mp4 -s 1.0 -t 2.5
 ```
