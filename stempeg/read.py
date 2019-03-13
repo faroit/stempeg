@@ -82,7 +82,8 @@ def read_stems(
     out_type=np.float_,
     stem_id=None,
     start=0,
-    duration=None
+    duration=None,
+    info=None
 ):
     """Read STEMS format into numpy Tensor
 
@@ -100,7 +101,9 @@ def read_stems(
     duration : float
         Read `duration` seconds. End position then is `start + duration`.
         Defaults to `None`: read till the end.
-
+    info : object
+        provide info object, useful if read_stems is called frequently on
+        file with same configuration (#streams, #channels, samplerate).
     Returns
     -------
     stems : array_like
@@ -113,7 +116,10 @@ def read_stems(
     Input is expected to be in 16bit/44.1 kHz
 
     """
-    FFinfo = Info(filename)
+    if info is None:
+        FFinfo = Info(filename)
+    else:
+        FFinfo = info
 
     if stem_id is not None:
         substreams = stem_id
