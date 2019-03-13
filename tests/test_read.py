@@ -64,3 +64,9 @@ def test_outtype(dtype):
         out_type=dtype
     )
     assert S.dtype == dtype
+
+
+def test_info():
+    fp = "tests/data/The Easton Ellises - Falcon 69.stem.mp4"
+    info = stempeg.Info(fp)
+    S, rate = stempeg.read_stems(fp, info=info)
