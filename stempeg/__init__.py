@@ -69,6 +69,20 @@ def cli(inargs=None):
     )
 
     parser.add_argument(
+        '-s',
+        type=float,
+        nargs='?',
+        help="start offset in seconds"
+    )
+
+    parser.add_argument(
+        '-t',
+        type=float,
+        nargs='?',
+        help="read duration"
+    )
+
+    parser.add_argument(
         'outdir',
         metavar='outdir',
         nargs='?',
@@ -76,15 +90,17 @@ def cli(inargs=None):
     )
 
     args = parser.parse_args(inargs)
-    stem2wav(args.filename, args.outdir, args.id)
+    stem2wav(args.filename, args.outdir, args.id, args.s, args.t)
 
 
 def stem2wav(
     stems_file,
     outdir=None,
-    idx=None
+    idx=None,
+    start=None,
+    duration=None,
 ):
-    S, sr = read_stems(stems_file, stem_id=idx)
+    S, sr = read_stems(stems_file, stem_id=idx, start=start, duration=duration)
 
     rootpath, filename = op.split(stems_file)
 
