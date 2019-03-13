@@ -56,7 +56,12 @@ class Info(object):
 def read_info(
     filename
 ):
-    """Extracts FFMPEG info and returns info as json
+    """Extracts FFMPEG info and returns info as JSON
+
+    Returns
+    -------
+    info : Dict
+        JSON info dict
     """
 
     cmd = [
@@ -124,9 +129,6 @@ def read_stems(
         for t in substreams
     ]
     for tmp_id, stem in enumerate(substreams):
-        if FFinfo.duration(stem) < start:
-            raise IndexError('start is out of range')
-
         rate = FFinfo.rate(stem)
         channels = FFinfo.channels(stem)
         cmd = [
@@ -141,7 +143,7 @@ def read_stems(
             '-loglevel', 'error',
             tmps[tmp_id].name
         ]
-        if start > 0:
+        if start:
             cmd.insert(3, '-ss')
             cmd.insert(4, str(start))
 
