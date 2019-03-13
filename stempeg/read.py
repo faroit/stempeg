@@ -129,9 +129,6 @@ def read_stems(
         for t in substreams
     ]
     for tmp_id, stem in enumerate(substreams):
-        if FFinfo.duration(stem) < start:
-            raise IndexError('start is out of range')
-
         rate = FFinfo.rate(stem)
         channels = FFinfo.channels(stem)
         cmd = [
