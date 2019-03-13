@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='stempeg',
-    version='0.1.5',
+    version='0.1.6',
     description='Read and write stem multistream audio files',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -55,4 +55,5 @@ setup(
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/faroit/stempeg/issues',
     },
+    include_package_data=True
 )

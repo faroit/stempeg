@@ -38,13 +38,15 @@ pip install stempeg
 
 ## Usage
 
-There are very few freely available stem files. We [included](https://raw.githubusercontent.com/faroit/stempeg/master/tests/data/The%20Easton%20Ellises%20-%20Falcon%2069.stem.mp4) a small test track from the Canadian rock-band _The Easton Ellises_. The band [released them](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html) under Creative Commons license CC BY-NC-SA 3.0.
+There are very few freely available stem files. We included a small test track from the Canadian rock-band _The Easton Ellises_. The band [released them](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html) under Creative Commons license CC BY-NC-SA 3.0.
+
+To use the included stem example you can use `stempeg.example_stem_path()`.
 
 ### Reading stems
 
 ```python
 import stempeg
-S, rate = stempeg.read_stems("input.stem.mp4")
+S, rate = stempeg.read_stems(stempeg.example_stem_path())
 ```
 
 `S` is the stem tensor that includes the time domain signals scaled to `[-1..1]`. The shape is `(stems, samples, channels)`.
@@ -54,7 +56,7 @@ S, rate = stempeg.read_stems("input.stem.mp4")
 you can read individual substreams of the stem file by passing the corresponding stem id (starting from 0):
 
 ```python
-S, rate = stempeg.read_stems("input.stem.mp4", stem_id=[0, 1])
+S, rate = stempeg.read_stems(stempeg.example_stem_path(), stem_id=[0, 1])
 ```
 
 ### Read excerpts (set seek position)
@@ -62,7 +64,7 @@ S, rate = stempeg.read_stems("input.stem.mp4", stem_id=[0, 1])
 to read an excerpt from the stem instead of the full file, you can provide start (`start`) and duration (`duration`) in seconds to `read_stems`:
 
 ```python
-S, _ = stempeg.read_stems("input.stem.mp4", start=1, duration=1.5)
+S, _ = stempeg.read_stems(stempeg.example_stem_path(), start=1, duration=1.5)
 # read from second 1.0 to second 2.5
 ```
 
@@ -71,8 +73,9 @@ S, _ = stempeg.read_stems("input.stem.mp4", start=1, duration=1.5)
 if `read_stems` is called repeatedly, it always does two system calls, one for getting the [file info](https://github.com/faroit/stempeg/blob/a56349d2a8297ccf5db13712fc16048029503b26/stempeg/read.py#L120) and one for the [actual reading](https://github.com/faroit/stempeg/blob/a56349d2a8297ccf5db13712fc16048029503b26/stempeg/read.py#L160).  To speed this up you could provide the `Info` object to `read_stems` if the number of streams, the number of channels and the samplerate is identical.
 
 ```python
-info = stempeg.Info("input.stem.mp4")
-S, _ = stempeg.read_stems("input.stem.mp4", info=info)
+file_path = stempeg.example_stem_path()
+info = stempeg.Info(file_path)
+S, _ = stempeg.read_stems(file_path, info=info)
 ```
 
 ### Writing stems
@@ -92,5 +95,5 @@ _stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles.
 
 
 ```bash
-stem2wav tests/data/The Easton Ellises - Falcon 69.stem.mp4 -s 1.0 -t 2.5
+stem2wav The Easton Ellises - Falcon 69.stem.mp4 -s 1.0 -t 2.5
 ```
