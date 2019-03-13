@@ -19,8 +19,9 @@ setup(
     description='Read and write stem multistream audio files',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    download_url='http://github.com/faroit/stempeg',
+    url='http://github.com/faroit/stempeg',
     author='Fabian-Robert Stoeter',
+    author_email='mail ät faroit.com',
     classifiers=[
             'Development Status :: 4 - Beta',
             'Environment :: Console',
