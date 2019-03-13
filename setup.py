@@ -21,7 +21,7 @@ setup(
     long_description_content_type='text/markdown',
     url='http://github.com/faroit/stempeg',
     author='Fabian-Robert Stoeter',
-    author_email='mail ät faroit.com',
+    author_email='mail@faroit.com',
     classifiers=[
             'Development Status :: 4 - Beta',
             'Environment :: Console',
