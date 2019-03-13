@@ -11,7 +11,8 @@ Technically, STEMs are MP4 files with multiple audio streams and additional meta
 
 ### 1. Installation of ffmpeg Library
 
-_stempeg_ relies on [ffmpeg](https://www.ffmpeg.org/) (version >= 3.2) to encode and decode the stems file format. 
+_stempeg_ relies on [ffmpeg](https://www.ffmpeg.org/) (tested: 4.1, 4.0.2, 3.4 and 2.8.6) to decode the stems file format. For
+encoding ffmpeg >= 3.2 is suggested.
 
 The Installation if ffmpeg differ among operating systems. If you use [Anaconda](https://anaconda.org/anaconda/python) you can install ffmpeg on Windows/Mac/Linux using the following command:
 
