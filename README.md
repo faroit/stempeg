@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/faroit/stempeg.svg?branch=master)](https://travis-ci.org/faroit/stempeg)
 [![Latest Version](https://img.shields.io/pypi/v/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffaroit%2Fstempeg.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffaroit%2Fstempeg?ref=badge_shield)
 
 python package to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
 Technically, STEMs are MP4 files with multiple audio streams and additional metatdata, hence _stempeg_ wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multi stream MP4 audio files.
@@ -97,3 +98,7 @@ _stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles.
 ```bash
 stem2wav The Easton Ellises - Falcon 69.stem.mp4 -s 1.0 -t 2.5
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffaroit%2Fstempeg.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffaroit%2Fstempeg?ref=badge_large)
