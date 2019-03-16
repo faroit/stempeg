@@ -5,7 +5,7 @@
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 
 python package to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
-Technically, STEMs are MP4 files with multiple audio streams and additional metatdata, hence _stempeg_ wrapper for [ffmpeg](https://www.ffmpeg.org/) that makes it easier to handle multi stream MP4 audio files.
+Technically, STEMs are MP4 files with multiple audio streams and additional metatdata. _stempeg_ is a python interface for [ffmpeg](https://www.ffmpeg.org/) particularly made to read and write multi stream MP4 audio files. 
 
 ## Installation
 
