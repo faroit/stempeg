@@ -41,7 +41,7 @@ class Info(object):
         ]
 
     def samples(self, stream):
-        return self.duration(stream) * self.rate(stream)
+        return int(self.json_info['streams'][stream]['duration_ts'])
 
     def duration(self, stream):
         return float(self.json_info['streams'][stream]['duration'])
