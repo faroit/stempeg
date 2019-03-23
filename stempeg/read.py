@@ -8,7 +8,6 @@ import soundfile as sf
 
 DEVNULL = open(os.devnull, 'w')
 
-
 class Info(object):
     """Abstract Info that holds the return of ffprobe
     
@@ -129,48 +128,46 @@ def read_stems(
     if not isinstance(substreams, list):
         substreams = [substreams]
 
-    stems = []
-    tmps = [
-        tmp.NamedTemporaryFile(delete=False, suffix='.wav')
-        for t in substreams
+    tmps = tmp.NamedTemporaryFile(delete=False, suffix='.wav')
+    rate = FFinfo.rate(0)
+    channels = FFinfo.channels(0)
+    cmd = [
+        'ffmpeg',
+        '-y',
+        '-vn',
+        '-i', filename,
+        '-filter_complex', "[0:0][0:1][0:2][0:3][0:4] amerge=inputs=5",
+        '-acodec', 'pcm_s16le',
+        '-ar', str(rate),
+        '-ac', str(channels * len(substreams)),
+        '-loglevel', 'error',
+        tmps.name
     ]
+    if start:
+        cmd.insert(3, '-ss')
+        cmd.insert(4, str(start))
+
+    if duration is not None:
+        cmd.insert(-1, '-t')
+        cmd.insert(-1, str(duration))
+
+    sp.call(cmd)
+    print(cmd)
+    # read wav files
+    audio, rate = sf.read(tmps.name)
+    tmps.close()
+    os.remove(tmps.name)
+
+    # # check if all stems have the same duration
+    # stem_durations = np.array([t.shape[0] for t in stems])
+    # if not (stem_durations == stem_durations[0]).all():
+    #     warnings.warn("Warning.......Stems differ in length and were shortend")
+    #     min_length = np.min(stem_durations)
+    #     stems = [t[:min_length, :] for t in stems]
+
+    stems = []
     for tmp_id, stem in enumerate(substreams):
-        rate = FFinfo.rate(stem)
-        channels = FFinfo.channels(stem)
-        cmd = [
-            'ffmpeg',
-            '-y',
-            '-vn',
-            '-i', filename,
-            '-map', '0:' + str(stem),
-            '-acodec', 'pcm_s16le',
-            '-ar', str(rate),
-            '-ac', str(channels),
-            '-loglevel', 'error',
-            tmps[tmp_id].name
-        ]
-        if start:
-            cmd.insert(3, '-ss')
-            cmd.insert(4, str(start))
-
-        if duration is not None:
-            cmd.insert(-1, '-t')
-            cmd.insert(-1, str(duration))
-
-        sp.call(cmd)
-        # read wav files
-        audio, rate = sf.read(tmps[tmp_id].name)
-        tmps[tmp_id].close()
-        os.remove(tmps[tmp_id].name)
-        stems.append(audio)
-
-    # check if all stems have the same duration
-    stem_durations = np.array([t.shape[0] for t in stems])
-    if not (stem_durations == stem_durations[0]).all():
-        warnings.warn("Warning.......Stems differ in length and were shortend")
-        min_length = np.min(stem_durations)
-        stems = [t[:min_length, :] for t in stems]
-
+        stems.append(audio[..., tmp_id*2:(tmp_id*2)+2])
     stems = np.array(stems)
     stems = np.squeeze(stems).astype(out_type)
     return stems, rate
