@@ -8,12 +8,12 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 0, 1, 2, 100])
+@pytest.fixture(params=[None, 0, 0.000001, 1, 2, 100])
 def start(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 0.5, 1, 2])
+@pytest.fixture(params=[None, 0.5, 1, 2, 2.00000000000001])
 def duration(request):
     return request.param
 
@@ -51,7 +51,7 @@ def test_duration(start, duration):
             duration=duration
         )
         if duration is not None:
-            assert S.shape[1] == duration * rate
+            assert S.shape[1] == int(duration * rate)
 
 
 def test_outtype(dtype):
