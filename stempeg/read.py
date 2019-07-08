@@ -4,9 +4,28 @@ import os
 import json
 import warnings
 import tempfile as tmp
+import decimal
 import soundfile as sf
 
 DEVNULL = open(os.devnull, 'w')
+
+
+
+def float_to_str(f, precision=12):
+    """
+    Convert the given float to a string,
+    without resorting to scientific notation
+    """
+
+    # create a new context for this task
+    ctx = decimal.Context()
+
+    # 12 digits should be enough to represent a single sample of
+    # 192khz in float
+    ctx.prec = precision
+
+    d1 = ctx.create_decimal(repr(f))
+    return format(d1, 'f')
 
 
 class Info(object):
@@ -151,11 +170,11 @@ def read_stems(
         ]
         if start:
             cmd.insert(3, '-ss')
-            cmd.insert(4, str(start))
+            cmd.insert(4, float_to_str(start))
 
         if duration is not None:
             cmd.insert(-1, '-t')
-            cmd.insert(-1, str(duration))
+            cmd.insert(-1, float_to_str(duration))
 
         sp.call(cmd)
         # read wav files
