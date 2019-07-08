@@ -11,8 +11,29 @@ from os import path as op
 import soundfile as sf
 import argparse
 import pkg_resources
+import shutil
 
-__version__ = "0.1.6"
+__version__ = "0.1.7"
+
+
+def cmd_exist(cmd):
+    try:
+        from shutil import which
+        return shutil.which(cmd) is not None
+    except ImportError:
+        return any(
+            os.access(os.path.join(path, cmd), os.X_OK)
+            for path in os.environ["PATH"].split(os.pathsep)
+        )
+
+def ffmpeg_and_ffprobe_exists():
+    return cmd_exist("ffmpeg") and cmd_exist("ffprobe")
+
+
+if not ffmpeg_and_ffprobe_exists():
+    raise RuntimeError('ffmpeg or ffprobe could not be found! '
+                       'Please install them before using stempeg. '
+                       'See: https://github.com/faroit/stempeg')
 
 
 def example_stem_path():
