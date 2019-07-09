@@ -8,12 +8,12 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 0, 0.000001, 1, 2, 100])
+@pytest.fixture(params=[None, 0, 0.0000001, 1, 2, 100])
 def start(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 0.5, 1, 2, 2.00000000000001])
+@pytest.fixture(params=[None, 0.00000001, 0.5, 1, 2, 2.00000000000001])
 def duration(request):
     return request.param
 
@@ -40,11 +40,13 @@ def test_duration(start, duration):
     info = stempeg.Info(fp)
     if start:
         if start < min(info.duration_streams):
-            S, _ = stempeg.read_stems(
+            S, rate = stempeg.read_stems(
                 fp,
                 start=start,
                 duration=duration
             )
+            if duration is not None:
+                assert S.shape[1] == int(duration * rate)
     else:
         S, rate = stempeg.read_stems(fp,
             start=start,

@@ -11,14 +11,13 @@ DEVNULL = open(os.devnull, 'w')
 
 
 
-def float_to_str(f, precision=12):
+def float_to_str(f, precision=8):
     """
     Convert the given float to a string,
     without resorting to scientific notation
     """
-
     # create a new context for this task
-    ctx = decimal.Context()
+    ctx = decimal.Context(rounding=decimal.ROUND_DOWN)
 
     # 12 digits should be enough to represent a single sample of
     # 192khz in float
@@ -153,6 +152,12 @@ def read_stems(
         tmp.NamedTemporaryFile(delete=False, suffix='.wav')
         for t in substreams
     ]
+
+    # apply some hack that fixes ffmpegs wrong read shape when using `-ss <0.000001`
+    if start:
+        if start < 1e-4:
+            start = None
+
     for tmp_id, stem in enumerate(substreams):
         rate = FFinfo.rate(stem)
         channels = FFinfo.channels(stem)
