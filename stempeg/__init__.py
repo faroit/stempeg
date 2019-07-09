@@ -13,7 +13,7 @@ import argparse
 import pkg_resources
 import shutil
 
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 
 def cmd_exist(cmd):

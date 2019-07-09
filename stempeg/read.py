@@ -11,7 +11,7 @@ DEVNULL = open(os.devnull, 'w')
 
 
 
-def float_to_str(f, precision=8):
+def float_to_str(f, precision=5):
     """
     Convert the given float to a string,
     without resorting to scientific notation
@@ -23,7 +23,7 @@ def float_to_str(f, precision=8):
     # 192khz in float
     ctx.prec = precision
 
-    d1 = ctx.create_decimal(repr(f))
+    d1 = ctx.create_decimal(repr(round(f, 5)))
     return format(d1, 'f')
 
 
