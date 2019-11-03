@@ -6,6 +6,7 @@ import warnings
 import tempfile as tmp
 import decimal
 import soundfile as sf
+from .ffmpeg import FFMPEG_PATH, FFPROBE_PATH
 
 DEVNULL = open(os.devnull, 'w')
 
@@ -83,7 +84,7 @@ def read_info(
     """
 
     cmd = [
-        'ffprobe',
+        FFPROBE_PATH,
         filename,
         '-v', 'error',
         '-print_format', 'json',
@@ -162,7 +163,7 @@ def read_stems(
         rate = FFinfo.rate(stem)
         channels = FFinfo.channels(stem)
         cmd = [
-            'ffmpeg',
+            FFMPEG_PATH,
             '-y',
             '-vn',
             '-i', filename,

@@ -3,6 +3,7 @@ from .read import read_info
 from .read import Info
 from .write import write_stems
 from .write import check_available_aac_encoders
+from .ffmpeg import FFMPEG_PATH, FFPROBE_PATH
 
 import re
 import os
@@ -14,26 +15,6 @@ import pkg_resources
 import shutil
 
 __version__ = "0.1.8"
-
-
-def cmd_exist(cmd):
-    try:
-        from shutil import which
-        return shutil.which(cmd) is not None
-    except ImportError:
-        return any(
-            os.access(os.path.join(path, cmd), os.X_OK)
-            for path in os.environ["PATH"].split(os.pathsep)
-        )
-
-def ffmpeg_and_ffprobe_exists():
-    return cmd_exist("ffmpeg") and cmd_exist("ffprobe")
-
-
-if not ffmpeg_and_ffprobe_exists():
-    raise RuntimeError('ffmpeg or ffprobe could not be found! '
-                       'Please install them before using stempeg. '
-                       'See: https://github.com/faroit/stempeg')
 
 
 def example_stem_path():
@@ -60,7 +41,7 @@ def ffmpeg_version():
     """
 
     cmd = [
-        'ffmpeg',
+        FFMPEG_PATH,
         '-version'
     ]
 

@@ -5,6 +5,7 @@ from itertools import chain
 import warnings
 import re
 import stempeg
+from .ffmpeg import FFMPEG_PATH, FFPROBE_PATH
 
 
 def check_available_aac_encoders():
@@ -17,7 +18,7 @@ def check_available_aac_encoders():
     """
 
     cmd = [
-        'ffmpeg',
+        FFMPEG_PATH,
         '-v', 'error',
         '-codecs'
     ]
@@ -102,7 +103,7 @@ def write_stems(
 
     cmd = (
         [
-            'ffmpeg', '-y',
+            FFMPEG_PATH, '-y',
             "-f", 's%dle' % (16),
             "-acodec", 'pcm_s%dle' % (16),
             '-ar', "%d" % rate,
