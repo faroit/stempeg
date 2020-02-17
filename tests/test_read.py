@@ -25,7 +25,7 @@ def test_stem_id():
             stempeg.example_stem_path(),
             stem_id=k
         )
-        assert Sk.ndim == 2
+        assert Sk.shape[2] == 2
 
 
 def test_shape():
@@ -48,7 +48,8 @@ def test_duration(start, duration):
             if duration is not None:
                 assert S.shape[1] == int(duration * rate)
     else:
-        S, rate = stempeg.read_stems(fp,
+        S, rate = stempeg.read_stems(
+            fp,
             start=start,
             duration=duration
         )
@@ -59,7 +60,7 @@ def test_duration(start, duration):
 def test_outtype(dtype):
     S, rate = stempeg.read_stems(
         stempeg.example_stem_path(),
-        out_type=dtype
+        dtype=dtype
     )
     assert S.dtype == dtype
 
