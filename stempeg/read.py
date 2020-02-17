@@ -18,15 +18,6 @@ def _to_ffmpeg_time(n):
     return '%d:%02d:%09.6f' % (h, m, s)
 
 
-def _to_ffmpeg_codec(codec):
-    ffmpeg_codecs = {
-        'm4a': 'aac',
-        'ogg': 'libvorbis',
-        'wma': 'wmav2',
-    }
-    return ffmpeg_codecs.get(codec) or codec
-
-
 def read_stems(
     filename,
     start=None,

@@ -5,6 +5,16 @@ from itertools import chain
 import warnings
 import re
 import stempeg
+import ffmpeg
+
+
+def _to_ffmpeg_codec(codec):
+    ffmpeg_codecs = {
+        'm4a': 'aac',
+        'ogg': 'libvorbis',
+        'wma': 'wmav2',
+    }
+    return ffmpeg_codecs.get(codec) or codec
 
 
 def check_available_aac_encoders():
@@ -37,10 +47,10 @@ def check_available_aac_encoders():
 
 def write_stems(
     audio,
-    filename,
+    path,
     rate=44100,
     bitrate=256000,
-    codec=None,
+    codec="m4a",
     ffmpeg_params=None
 ):
     """Write stems from numpy Tensor
@@ -49,8 +59,8 @@ def write_stems(
     ----------
     audio : array_like
         The tensor of Matrix of stems. The data shape is formatted as
-        :code:`stems x channels x samples`.
-    filename : str
+        :code:`stems x samples x channels`.
+    path : str
         Output file_name of the stems file
     rate : int
         Output samplerate. Defaults to 44100 Hz.
@@ -86,43 +96,35 @@ def write_stems(
             codec = 'aac'
             warnings.warn("For better quality, please install libfdc_aac")
 
-    tmps = [
-        tmp.NamedTemporaryFile(delete=False, suffix='.wav')
-        for t in range(audio.shape[0])
-    ]
-
     if audio.shape[1] % 1024 != 0:
         warnings.warn(
             "Number of samples does not divide by 1024, be aware that "
             "the AAC encoder add silence to the input signal"
         )
 
-    for k in range(audio.shape[0]):
-        sf.write(tmps[k].name, audio[k], rate)
+    input_kwargs = {'ar': rate, 'ac': audio.shape[-1]}
+    output_kwargs = {'ar': rate, 'strict': '-2'}
 
-    cmd = (
-        [
-            'ffmpeg', '-y',
-            "-f", 's%dle' % (16),
-            "-acodec", 'pcm_s%dle' % (16),
-            '-ar', "%d" % rate,
-            '-ac', "%d" % 2
-        ] +
-        list(chain.from_iterable(
-            [['-i', i.name] for i in tmps]
-        )) +
-        list(chain.from_iterable(
-            [['-map', str(k)] for k, _ in enumerate(tmps)]
-        )) +
-        [
-            '-vn',
-            '-acodec', codec,
-            '-ar', "%d" % rate,
-            '-strict', '-2',
-            '-loglevel', 'error'
-        ] +
-        (['-ab', str(bitrate)] if (bitrate is not None) else []) +
-        (ffmpeg_params if ffmpeg_params else []) +
-        [filename]
-    )
-    sp.call(cmd)
+    if bitrate:
+        output_kwargs['audio_bitrate'] = bitrate
+    if codec is not None and codec != 'wav':
+        output_kwargs['codec'] = _to_ffmpeg_codec(codec)
+
+    process = (
+        ffmpeg
+        .input('pipe:', format='f32le', **input_kwargs)
+        .output(path, **output_kwargs)
+        .overwrite_output()
+        .run_async(pipe_stdin=True, pipe_stderr=True, quiet=True))
+    try:
+        process.stdin.write(audio.astype('<f4').tobytes())
+        process.stdin.close()
+        process.wait()
+    except IOError:
+        raise Warning(f'FFMPEG error: {process.stderr.read()}')
+    # list(chain.from_iterable(
+    #     [['-i', i.name] for i in tmps]
+    # )) +
+    # list(chain.from_iterable(
+    #     [['-map', str(k)] for k, _ in enumerate(tmps)]
+    # )) +
