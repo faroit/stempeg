@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='stempeg',
-    version='0.1.8',
+    version='0.2.0',
     description='Read and write stem multistream audio files',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -42,6 +42,7 @@ setup(
     # computations stack
     install_requires=[
         'numpy>=1.6',
+        'ffmpeg-python>=0.2.0',
         'soundfile>=0.9.0'
     ],
     extras_require={
