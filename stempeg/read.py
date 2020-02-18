@@ -6,6 +6,7 @@ import os
 import json
 import warnings
 import ffmpeg
+import pprint
 
 
 def _to_ffmpeg_time(n):
@@ -24,7 +25,8 @@ def read_stems(
     duration=None,
     stem_id=None,
     dtype=np.float32,
-    info=None
+    info=None,
+    stems_from_multichannel=False
 ):
     """ Loads the audio file denoted by the given path
     and returns it data as a waveform.
@@ -51,13 +53,21 @@ def read_stems(
     if 'streams' not in metadata.info or metadata.nb_audio_streams == 0:
         raise Warning('No stream was found with ffprobe')
 
-    substreams = metadata.audio_stream_idx()
+    if stems_from_multichannel:
+        if metadata.nb_audio_streams != 1:
+            raise Warning('Stems should be encoded as 1 substream')
+        else:
+            if metadata.audio_streams[0]['channels'] % 2 != 0:
+                raise Warning('Stems should be encoded as stereo pairs')
+            else:
+                substreams = 0
+    else:
+        substreams = metadata.audio_stream_idx()
 
     if not isinstance(substreams, list):
         substreams = [substreams]
 
     stems = []
-
     # apply some hack that fixes ffmpegs wrong read shape when using `-ss <0.000001`
     if start:
         if start < 1e-4:
@@ -91,6 +101,11 @@ def read_stems(
         stems = [t[:min_length, :] for t in stems]
 
     stems = np.array(stems)
+    if stems_from_multichannel:
+        stems = stems.reshape(
+            stems.shape[0], stems.shape[1], 2, -1
+        ).transpose(0, 3, 1, 2)
+
     stems = np.squeeze(stems)
     return stems, rate
 
@@ -135,3 +150,6 @@ class Info(object):
 
     def channels(self, idx):
         return int(self.audio_streams[idx]['channels'])
+
+    def __repr__(self):
+        return pprint.pformat(self.audio_streams)
