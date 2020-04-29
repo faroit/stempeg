@@ -68,7 +68,7 @@ def read_stems(
         substreams = [substreams]
 
     stems = []
-    # apply some hack that fixes ffmpegs wrong read shape when using `-ss <0.000001`
+    # apply fix for very small start values of `-ss <0.000001`
     if start:
         if start < 1e-4:
             start = None

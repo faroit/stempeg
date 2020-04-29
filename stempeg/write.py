@@ -50,7 +50,7 @@ def write_stems(
     path,
     rate=44100,
     bitrate=256000,
-    codec="m4a",
+    codec=None,
     ffmpeg_params=None
 ):
     """Write stems from numpy Tensor
@@ -75,26 +75,23 @@ def write_stems(
     Notes
     -----
 
-    Output is written as 16bit/44.1 kHz
-
     """
     if int(stempeg.ffmpeg_version()[0]) < 3:
         warnings.warn(
             "Writing STEMS with FFMPEG version < 3 is unsupported", UserWarning
         )
 
-    if codec is None:
+    if codec == "aac":
         avail = check_available_aac_encoders()
-
         if avail is not None:
             if 'libfdk_aac' in avail:
                 codec = 'libfdk_aac'
             else:
                 codec = 'aac'
-                warnings.warn("For better quality, please install libfdc_aac")
+                warnings.warn("For better quality, please install libfdk_aac")
         else:
             codec = 'aac'
-            warnings.warn("For better quality, please install libfdc_aac")
+            warnings.warn("For better quality, please install libfdc_aak")
 
     if audio.shape[1] % 1024 != 0:
         warnings.warn(
@@ -102,29 +99,59 @@ def write_stems(
             "the AAC encoder add silence to the input signal"
         )
 
-    input_kwargs = {'ar': rate, 'ac': audio.shape[-1]}
-    output_kwargs = {'ar': rate, 'strict': '-2'}
+    # create temporary file
+    with tmp.NamedTemporaryFile(suffix='.wav') as tempfile:
+        # swap stem axis
+        nb_streams = audio.shape[0]
+        audio = audio.transpose(1, 0, 2)
+        # aggregate stem and channels
+        audio = audio.reshape(audio.shape[0], -1)
 
-    if bitrate:
-        output_kwargs['audio_bitrate'] = bitrate
-    if codec is not None and codec != 'wav':
-        output_kwargs['codec'] = _to_ffmpeg_codec(codec)
+        process = (
+            ffmpeg
+            .input('pipe:', format='f32le', ar=rate, ac=audio.shape[-1])
+            .output(tempfile.name, ar=rate, strict='-2')
+            .overwrite_output()
+            .run_async(pipe_stdin=True, pipe_stderr=True, quiet=True))
+        try:
+            process.stdin.write(audio.astype('<f4').tobytes())
+            process.stdin.close()
+            process.wait()
+        except IOError:
+            raise Warning(f'FFMPEG error: {process.stderr.read()}')
 
-    process = (
-        ffmpeg
-        .input('pipe:', format='f32le', **input_kwargs)
-        .output(path, **output_kwargs)
-        .overwrite_output()
-        .run_async(pipe_stdin=True, pipe_stderr=True, quiet=True))
-    try:
-        process.stdin.write(audio.astype('<f4').tobytes())
-        process.stdin.close()
-        process.wait()
-    except IOError:
-        raise Warning(f'FFMPEG error: {process.stderr.read()}')
-    # list(chain.from_iterable(
-    #     [['-i', i.name] for i in tmps]
-    # )) +
-    # list(chain.from_iterable(
-    #     [['-map', str(k)] for k, _ in enumerate(tmps)]
-    # )) +
+        cmd = (
+            [
+                'ffmpeg',
+                '-y',
+                '-acodec', 'pcm_s%dle' % (16),
+                '-i', tempfile.name
+            ] +
+            ([
+                '-filter_complex',
+                ';'.join(
+                    "[a:0]pan=stereo| c0=c%d | c1=c%d[a%d]" % (idx * 2, idx * 2 + 1, idx)
+                    for idx in range(nb_streams)
+                ),
+                '-map', "[a0]",
+                '-map', "[a1]",
+                '-map', "[a2]",
+                '-map', "[a3]",
+                '-map', "[a4]",
+            ]) +
+            [
+                '-vn'
+            ] +
+            (
+                ['-c:a', _to_ffmpeg_codec(codec)] if (codec is not None) else []
+            ) +
+            [
+                '-ar', "%d" % rate,
+                '-strict', '-2',
+                '-loglevel', 'error'
+            ] +
+            (['-ab', str(bitrate)] if (bitrate is not None) else []) +
+            (ffmpeg_params if ffmpeg_params else []) +
+            [path]
+        )
+        sp.call(cmd)

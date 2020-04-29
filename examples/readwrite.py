@@ -16,6 +16,8 @@ if __name__ == '__main__':
     # read stems
     stems, rate = stempeg.read_stems(args.input)
     print(stems.shape)
-    stempeg.write_stems(stems, "stems.mp4")
-    stems2, rate = stempeg.read_stems("stems.mp4")
+    stempeg.write_stems(stems, "test.stem.m4a")
+    print(stempeg.Info("test.stem.m4a").nb_audio_streams)
+
+    stems2, rate = stempeg.read_stems("test.stem.m4a")
     print(stems2.shape)
