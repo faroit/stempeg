@@ -42,8 +42,7 @@ setup(
     # computations stack
     install_requires=[
         'numpy>=1.6',
-        'ffmpeg-python>=0.2.0',
-        'soundfile>=0.9.0'
+        'ffmpeg-python>=0.2.0'
     ],
     extras_require={
         'tests': [
