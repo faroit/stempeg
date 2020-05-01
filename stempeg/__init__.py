@@ -1,18 +1,20 @@
+from .read import read_streams
 from .read import read_stems
 from .read import Info
+from .write import write_streams
 from .write import write_stems
+from .write import write_audio
 from .write import check_available_aac_encoders
 
 import re
 import os
 import subprocess as sp
 from os import path as op
-import soundfile as sf
 import argparse
 import pkg_resources
 import shutil
 
-__version__ = "0.1.9"
+__version__ = "0.2.0"
 
 
 def cmd_exist(cmd):
@@ -24,6 +26,7 @@ def cmd_exist(cmd):
             os.access(os.path.join(path, cmd), os.X_OK)
             for path in os.environ["PATH"].split(os.pathsep)
         )
+
 
 def ffmpeg_and_ffprobe_exists():
     return cmd_exist("ffmpeg") and cmd_exist("ffprobe")
@@ -37,14 +40,14 @@ if not ffmpeg_and_ffprobe_exists():
 
 def example_stem_path():
     """Get the path to an included stem file.
-    
+
     Returns
     -------
     filename : str
         Path to the stem file
     """
     return pkg_resources.resource_filename(
-        __name__, 
+        __name__,
         'data/The Easton Ellises - Falcon 69.stem.mp4'
     )
 
@@ -151,4 +154,5 @@ def stem2wav(
 
     for i in range(S.shape[0]):
         outfile = op.join(rootpath, "%s_%s.wav" % (basename, i))
+        # TODO
         sf.write(outfile, S[i], sr)

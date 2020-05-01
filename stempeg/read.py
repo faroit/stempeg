@@ -19,30 +19,47 @@ def _to_ffmpeg_time(n):
     return '%d:%02d:%09.6f' % (h, m, s)
 
 
-def read_stems(
-    filename,
+def read_stems(*args, **kwargs):
+    return read_streams(*args, **kwargs)
+
+
+def read_streams(
+    path,
     start=None,
     duration=None,
     stem_id=None,
     dtype=np.float32,
     info=None,
+    sample_rate=None,
     stems_from_multichannel=False
 ):
-    """ Loads the audio file denoted by the given path
-    and returns it data as a waveform.
-    :param filename: filename of the audio file to load data from.
-    :param offset: (Optional) Start offset to load from in seconds.
-    :param duration: (Optional) Duration to load in seconds.
-    :param sample_rate: (Optional) Sample rate to load audio with.
-    :param dtype: (Optional) Numpy data type to use, default to float32.
-    :returns: Loaded data a (waveform, sample_rate) tuple.
-    :raise SpleeterError: If any error occurs while loading audio.
+    """Read stems into numpy tensor
+
+    Parameters
+    ----------
+    path : str (required)
+        filename of the audio file to load data from.
+    start : float (optional)
+        Start offset to load from in seconds.
+    duration : float (optional)
+        Duration to load in seconds.
+    stem_id : int (optional)
+        subbstream id, defauls to `None` (all substreams are loaded)
+    dtype : (Optional)
+        Numpy data type to use, default to `np.float32`.
+    info : Info (Optional)
+        Pass ffmpeg `Info` object to reduce nunber of probes on file
+    sample_rate : int
+        Sample rate to load audio with. Defaults to `None`
+    stems_from_multichannel : bool
+        substreams will be loaded from multi-channel pairs
+        (defaults to `False`)
     """
-    if not isinstance(filename, str):
-        filename = filename.decode()
+    if not isinstance(path, str):
+        path = path.decode()
     try:
         if info is None:
-            metadata = Info(filename)
+            metadata = Info(path)
         else:
             metadata = info
 
@@ -74,9 +91,10 @@ def read_stems(
             start = None
 
     for stem in substreams:
-        rate = metadata.rate(stem)
+        if sample_rate is None:
+            sample_rate = metadata.sample_rate(stem)
         channels = metadata.channels(stem)
-        output_kwargs = {'format': 'f32le', 'ar': rate}
+        output_kwargs = {'format': 'f32le', 'ar': sample_rate}
         if duration is not None:
             output_kwargs['t'] = _to_ffmpeg_time(duration)
         if start is not None:
@@ -85,7 +103,7 @@ def read_stems(
         output_kwargs['map'] = '0:' + str(stem)
         process = (
             ffmpeg
-            .input(filename)
+            .input(path)
             .output('pipe:', **output_kwargs)
             .run_async(pipe_stdout=True, pipe_stderr=True))
         buffer, _ = process.communicate()
@@ -102,12 +120,12 @@ def read_stems(
 
     stems = np.array(stems)
     if stems_from_multichannel:
-        stems = stems.reshape(
-            stems.shape[0], stems.shape[1], 2, -1
-        ).transpose(0, 3, 1, 2)
+        stems = stems.transpose(1, 0, 2)
+        stems = stems.reshape(stems.shape[0], stems.shape[1], -1, 2)
+        stems = stems.transpose(2, 0, 3, 1)
 
     stems = np.squeeze(stems)
-    return stems, rate
+    return stems, sample_rate
 
 
 class Info(object):
@@ -145,7 +163,7 @@ class Info(object):
     def duration(self, idx):
         return float(self.audio_streams[idx]['duration'])
 
-    def rate(self, idx):
+    def sample_rate(self, idx):
         return int(self.audio_streams[idx]['sample_rate'])
 
     def channels(self, idx):
