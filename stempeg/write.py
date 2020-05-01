@@ -167,7 +167,7 @@ def write_streams(
 
     For 1.) we provide two options:
 
-    1a.) streams will be saved as substreams aka. the streams format
+    1a.) streams will be saved as substreams aka
          when `streams_as_multichannel=False` (default)
     1b.) streams will be aggregated into channels and saved as
          multichannel file.
@@ -175,11 +175,15 @@ def write_streams(
          will be converted to a single-stream multichannel audio
          `(samples, streams*2)`. This option is activated using
          `streams_as_multichannel=True`
+    1c.) streams will be saved as multiple files when `streams_as_files` is active
 
-    For 2.), when the container does not support multiple streams:
-    `streams_as_multichannel` has to be set to True (See 1b) otherwise an
-    error will be raised. Note that this only works for `wav` and `flac`).
-    * file ending of `path` determines the container (but not the codec!).
+    For 2.), when the container does not support multiple streams there 
+    are also two options:
+
+    2a) `streams_as_multichannel` has to be set to True (See 1b) otherwise an
+        error will be raised. Note that this only works for `wav` and `flac`).
+        * file ending of `path` determines the container (but not the codec!).
+    2b) `streams_as_files` so that multiple files will be created when `streams_as_files` is active
 
 
     """
