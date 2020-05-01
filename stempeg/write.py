@@ -74,10 +74,6 @@ def write_audio(
         Specifies the codec being used. Defaults to `None` which
         automatically selects default codec for each container
     """
-    directory = os.path.dirname(path)
-    if not os.path.exists(directory):
-        raise Warning(f'output directory does not exists: {directory}')
-
     if output_sample_rate is None:
         output_sample_rate = sample_rate
 
@@ -177,7 +173,7 @@ def write_streams(
          `streams_as_multichannel=True`
     1c.) streams will be saved as multiple files when `streams_as_files` is active
 
-    For 2.), when the container does not support multiple streams there 
+    For 2.), when the container does not support multiple streams there
     are also two options:
 
     2a) `streams_as_multichannel` has to be set to True (See 1b) otherwise an

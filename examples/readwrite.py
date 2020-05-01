@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     # writing to wav requires to convert streams to multichannel
     stempeg.write_streams(
-        "out/test.wav",
+        "test.wav",
         stems,
         sample_rate=96000,
         streams_as_multichannel=True
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # TODO
     # stempeg also supports to load merged-multichannel streams using
     stems, rate = stempeg.read_streams(
-        "out/test.wav",
+        "test.wav",
         stems_from_multichannel=True
     )
 
