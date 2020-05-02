@@ -2,9 +2,10 @@ import stempeg
 import numpy as np
 import pytest
 import tempfile as tmp
+import subprocess as sp
 
 
-@pytest.fixture(params=[1, 2, 3])
+@pytest.fixture(params=[1, 2, 4])
 def nb_streams(request):
     return request.param
 
@@ -40,14 +41,20 @@ def multifile_format(request):
 
 
 def test_multistream_containers(audio, multistream_format):
-    with tmp.NamedTemporaryFile(suffix='.' + multistream_format) as tempfile:
+    with tmp.NamedTemporaryFile(
+        delete=False,
+        suffix='.' + multistream_format
+    ) as tempfile:
         stempeg.write_streams(tempfile.name, audio, sample_rate=44100)
         loaded_audio, rate = stempeg.read_streams(tempfile.name)
         assert audio.shape == loaded_audio.shape
 
 
 def test_multichannel_containers(audio, multichannel_format):
-    with tmp.NamedTemporaryFile(suffix='.' + multichannel_format) as tempfile:
+    with tmp.NamedTemporaryFile(
+        delete=False,
+        suffix='.' + multichannel_format
+    ) as tempfile:
         stempeg.write_streams(
             tempfile.name,
             audio,
@@ -62,10 +69,37 @@ def test_multichannel_containers(audio, multichannel_format):
 
 
 def test_multifileformats(audio, multifile_format):
-    with tmp.NamedTemporaryFile(suffix='.' + multifile_format) as tempfile:
+    with tmp.NamedTemporaryFile(
+        delete=False,
+        suffix='.' + multifile_format
+    ) as tempfile:
         stempeg.write_streams(
             tempfile.name,
             audio,
             sample_rate=44100,
             streams_as_files=True
         )
+
+
+def test_stereo(audio, multifile_format):
+    if audio.ndim == 2:
+        with tmp.NamedTemporaryFile(
+            delete=False,
+            suffix='.' + multifile_format
+        ) as tempfile:
+            stempeg.write_audio(tempfile.name, audio, sample_rate=44100)
+            loaded_audio, rate = stempeg.read_streams(
+                tempfile.name,
+            )
+            assert audio.shape == loaded_audio.shape
+
+
+def test_ffmpeg_errors(audio):
+    if audio.ndim == 3:
+        # write multistream as wav
+        with pytest.raises(RuntimeError):
+            with tmp.NamedTemporaryFile(
+                delete=False,
+                suffix='.wav'
+            ) as tempfile:
+                stempeg.write_streams(tempfile.name, audio, sample_rate=44100)

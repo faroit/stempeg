@@ -3,10 +3,12 @@ import tempfile as tmp
 import numpy as np
 from itertools import chain
 import warnings
+import logging
 import re
 import stempeg
 import ffmpeg
 import os
+from pathlib import Path
 
 
 def _to_ffmpeg_codec(codec):
@@ -74,6 +76,10 @@ def write_audio(
         Specifies the codec being used. Defaults to `None` which
         automatically selects default codec for each container
     """
+
+    # check if path is available and creat it
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
     if output_sample_rate is None:
         output_sample_rate = sample_rate
 
@@ -101,6 +107,7 @@ def write_stems(
     path,
     data,
     sample_rate=44100,
+    stream_names=None
 ):
     write_streams(
         path,
@@ -111,7 +118,7 @@ def write_stems(
         bitrate=256000,
         ffmpeg_params=None,
         streams_as_multichannel=False,
-        stream_names=None
+        stream_names=stream_names
     )
 
 
@@ -133,23 +140,30 @@ def write_streams(
     ----------
     path : str
         Output file_name of the streams file
-    data : array_like
+    data : array_like or dict
         The tensor of Matrix of streams. The data shape is formatted as
-        :code:`streams x samples x channels`.
+            :code:`(streams, samples, channels)`.
+        If a dict is provided, we assume:
+            :code: `{ "name": array_like of shape (samples, channels), ...}`
     sample_rate : int
         Output samplerate. Defaults to 44100 Hz.
-    bitrate : int
-        AAC Bitrate in Bits per second. Defaults to 256 Kbit/s
     codec : str
-        AAC codec used. Defaults to `None` which automatically selects
+        codec used. Defaults to `None` which automatically selects
         either `libfdk_aac` or `aac` in that order, determined by availability.
+        For the best quality, use `libfdk_aac`.
+    bitrate : int
+        Bitrate in Bits per second. Defaults to `None`
     ffmpeg_params : list(str)
         List of additional ffmpeg parameters
     streams_as_multichannel : bool
         streams will be saved as multiple channels
         (if multichannel is supported).
     streams_as_files : bool
-        streams will be saved as multiple files
+        streams will be saved as multiple files. Here, the basename(path),
+        is ignored and just the parent path + extension is used.
+    stream_names : list(str)
+        provide a name of each streams, if `data` is array_like
+        defaults to enumerated
 
     Notes
     -----
@@ -184,8 +198,9 @@ def write_streams(
 
     """
     if int(stempeg.ffmpeg_version()[0]) < 3:
-        warnings.warn(
-            "Writing streams with FFMPEG version < 3 is unsupported", UserWarning
+        warnings.warning(
+            "Writing streams with FFMPEG version < 3 is unsupported",
+            UserWarning
         )
 
     if codec == "aac":
@@ -194,17 +209,27 @@ def write_streams(
             if 'libfdk_aac' in avail:
                 codec = 'libfdk_aac'
             else:
+                logging.warning(
+                    "For the best quality, use `libfdk_aac` instead of `aac`."
+                )
                 codec = 'aac'
-                warnings.warn("For better quality, please install libfdk_aac")
         else:
             codec = 'aac'
-            warnings.warn("For better quality, please install libfdc_aak")
 
     if output_sample_rate is None:
         output_sample_rate = sample_rate
 
+    if isinstance(data, dict):
+        keys = data.keys()
+        values = data.values()
+        data = np.array(list(values))
+        stream_names = list(keys)
+    else:
+        if stream_names is None:
+            stream_names = [str(k) for k in range(data.shape[0])]
+
     if data.shape[1] % 1024 != 0:
-        warnings.warn(
+        logging.warning(
             "Number of samples does not divide by 1024, be aware that "
             "the AAC encoder add silence to the input signal"
         )
@@ -229,7 +254,7 @@ def write_streams(
         )
     else:
         if nb_channels % 2 != 0:
-            warnings.warn("Only stereo streams are supported", UserWarning)
+            warnings.warning("Only stereo streams are supported", UserWarning)
 
         # For more than one stream, streams will be reshaped
         # into the channel dimension, always assuming we have stereo channels
@@ -255,10 +280,10 @@ def write_streams(
         )
     elif streams_as_files:
         for idx in range(nb_streams):
-            file_path, file_extension = os.path.splitext(path)
-            stream_filepath = os.path.join(
-                file_path + "_%d" % idx + file_extension
-            )
+            p = Path(path)
+            stream_filepath = str(Path(
+                p.parent, stream_names[idx] + p.suffix
+            ))
             write_audio(
                 path=stream_filepath,
                 data=data[idx],
@@ -278,6 +303,9 @@ def write_streams(
                 output_sample_rate=output_sample_rate,
                 codec='wav'
             )
+
+            # check if path is available and creat it
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
 
             # convert tempfile to multistream file assuming
             # each stream occupies a pair of channels
@@ -303,7 +331,17 @@ def write_streams(
                     ]
                 ) + list(
                     chain.from_iterable(
-                        [['-map', "[a%d]" % idx] for idx in range(nb_streams)]
+                        [
+                            [
+                                '-map',
+                                "[a%d]" % idx,
+                                "-metadata:s:a:%d" % idx,
+                                "handler_name=%s" % stream_names[idx],
+                                "-metadata:s:a:%d" % idx,
+                                "title=%s" % stream_names[idx]
+                            ]
+                            for idx in range(nb_streams)
+                        ]
                     )
                 ) +
                 [
@@ -322,4 +360,9 @@ def write_streams(
                 (ffmpeg_params if ffmpeg_params else []) +
                 [path]
             )
-            sp.call(cmd)
+            try:
+                sp.check_call(cmd)
+            except sp.CalledProcessError as err:
+                raise RuntimeError(err) from None
+            finally:
+                tempfile.close()
