@@ -54,10 +54,11 @@ def test_multistream_containers(audio, multistream_format, nb_streams):
         )
         loaded_audio, rate = stempeg.read_streams(tempfile.name)
         assert audio.shape == loaded_audio.shape
-        info = stempeg.Info(tempfile.name)
-        loaded_stream_names = info.title_streams
-        # check if titles could be extracted
-        assert all([a == b for a, b in zip(stream_names, loaded_stream_names)])
+        if multistream_format == "mp4":
+            info = stempeg.Info(tempfile.name)
+            loaded_stream_names = info.title_streams
+            # check if titles could be extracted
+            assert all([a == b for a, b in zip(stream_names, loaded_stream_names)])
 
 
 def test_multichannel_containers(audio, multichannel_format):
