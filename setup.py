@@ -50,7 +50,7 @@ setup(
         ],
     },
     entry_points={'console_scripts': [
-        'stem2wav=stempeg:cli',
+        'stem2files=stempeg:cli',
     ]},
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/faroit/stempeg/issues',

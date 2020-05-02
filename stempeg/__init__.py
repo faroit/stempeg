@@ -99,6 +99,14 @@ def cli(inargs=None):
     )
 
     parser.add_argument(
+        '--format',
+        metavar='format',
+        type=str,
+        default='wav',
+        help="Output format"
+    )
+
+    parser.add_argument(
         '--id',
         metavar='id',
         type=int,
@@ -128,16 +136,25 @@ def cli(inargs=None):
     )
 
     args = parser.parse_args(inargs)
-    stem2wav(args.filename, args.outdir, args.id, args.s, args.t)
+    stem2files(
+        args.filename,
+        args.outdir,
+        args.format,
+        args.id,
+        args.s,
+        args.t
+    )
 
 
-def stem2wav(
+def stem2files(
     stems_file,
     outdir=None,
+    format="wav",
     idx=None,
     start=None,
     duration=None,
 ):
+    info = Info(stems_file)
     S, sr = read_stems(stems_file, stem_id=idx, start=start, duration=duration)
 
     rootpath, filename = op.split(stems_file)
@@ -152,7 +169,17 @@ def stem2wav(
 
         rootpath = outdir
 
-    for i in range(S.shape[0]):
-        outfile = op.join(rootpath, "%s_%s.wav" % (basename, i))
-        # TODO
-        sf.write(outfile, S[i], sr)
+    if len(set(info.title_streams)) == len(info.title_streams):
+        # titles contain duplicates
+        # lets not use the metadata
+        stream_names = info.title_streams
+    else:
+        stream_names = None
+
+    write_streams(
+        op.join(rootpath, basename, "*." + format),
+        data=S,
+        sample_rate=sr,
+        streams_as_files=True,
+        stream_names=stream_names
+    )
