@@ -24,17 +24,17 @@ def audio(request, nb_streams, nb_samples, nb_channels):
     return np.squeeze(np.random.random((nb_streams, nb_samples, nb_channels)))
 
 
-@pytest.fixture(params=["m4a", "mka"])
+@pytest.fixture(params=["mp4", "mka"])
 def multistream_format(request):
     return request.param
 
 
-@pytest.fixture(params=["m4a", "mka", "wav", "flac"])
+@pytest.fixture(params=["mp4", "mka", "wav", "flac"])
 def multichannel_format(request):
     return request.param
 
 
-@pytest.fixture(params=["mp3", "m4a", "mka", "wav", "flac"])
+@pytest.fixture(params=["mp3", "mp4", "mka", "wav", "flac"])
 def multifile_format(request):
     return request.param
 
