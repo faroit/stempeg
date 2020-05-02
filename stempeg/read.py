@@ -154,6 +154,13 @@ class Info(object):
             self.duration(k) for k, stream in enumerate(self.audio_streams)
         ]
 
+    @property
+    def title_streams(self):
+        return [
+            stream['tags']['handler_name']
+            for stream in self.audio_streams
+        ]
+
     def audio_stream_idx(self):
         return [s['index'] for s in self.audio_streams]
 
@@ -162,6 +169,9 @@ class Info(object):
 
     def duration(self, idx):
         return float(self.audio_streams[idx]['duration'])
+
+    def title(self, idx):
+        return self.audio_streams[idx]['tags']['handler_name']
 
     def sample_rate(self, idx):
         return int(self.audio_streams[idx]['sample_rate'])

@@ -40,14 +40,24 @@ def multifile_format(request):
     return request.param
 
 
-def test_multistream_containers(audio, multistream_format):
+def test_multistream_containers(audio, multistream_format, nb_streams):
     with tmp.NamedTemporaryFile(
         delete=False,
         suffix='.' + multistream_format
     ) as tempfile:
-        stempeg.write_streams(tempfile.name, audio, sample_rate=44100)
+        stream_names = [str(k) for k in range(nb_streams)]
+        stempeg.write_streams(
+            tempfile.name,
+            audio,
+            sample_rate=44100,
+            stream_names=stream_names
+        )
         loaded_audio, rate = stempeg.read_streams(tempfile.name)
         assert audio.shape == loaded_audio.shape
+        info = stempeg.Info(tempfile.name)
+        loaded_stream_names = info.title_streams
+        # check if titles could be extracted
+        assert all([a == b for a, b in zip(stream_names, loaded_stream_names)])
 
 
 def test_multichannel_containers(audio, multichannel_format):
