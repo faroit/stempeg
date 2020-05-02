@@ -58,7 +58,9 @@ def test_multistream_containers(audio, multistream_format, nb_streams):
             info = stempeg.Info(tempfile.name)
             loaded_stream_names = info.title_streams
             # check if titles could be extracted
-            assert all([a == b for a, b in zip(stream_names, loaded_stream_names)])
+            assert all(
+                [a == b for a, b in zip(stream_names, loaded_stream_names)]
+            )
 
 
 def test_multichannel_containers(audio, multichannel_format):
