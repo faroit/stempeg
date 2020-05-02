@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     # save stems as multi-stream mp4
     stempeg.write_stems(
-        "test.stem.m4a",
+        "test.stem.mp4",
         stems,
         sample_rate=96000
     )
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # `write_stems` is a preset for the following settings
     # here the output signal is resampled to 44100 Hz and AAC codec is used
     stempeg.write_streams(
-        "test.stem.m4a",
+        "test.stem.mp4",
         stems,
         codec="aac",
         bitrate="256000",
