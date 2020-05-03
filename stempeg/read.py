@@ -63,6 +63,8 @@ def read_streams(
         else:
             metadata = info
 
+        ffmpeg.probe(path)
+
     except ffmpeg._run.Error as e:
         raise Warning(
             'An error occurs with ffprobe (see ffprobe output below)\n\n{}'
