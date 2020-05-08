@@ -175,6 +175,10 @@ class Info(object):
     def title(self, idx):
         return self.audio_streams[idx]['tags']['handler_name']
 
+    def rate(self, idx):
+        # deprecated
+        return self.sample_rate(idx)
+
     def sample_rate(self, idx):
         return int(self.audio_streams[idx]['sample_rate'])
 
