@@ -30,6 +30,7 @@ before_install:
 install:
     # install your own package into the environment
     - pip install -e .[tests]
+    - pip install virtualenv --upgrade
 
 script:
     - python --version
