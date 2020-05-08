@@ -10,7 +10,7 @@ def nb_samples(request):
 
 def test_shape(nb_samples):
     R = np.random.random((5, nb_samples, 2))
-    stempeg.write_stems(R, "./random.stem.mp4")
+    stempeg.write_stems("./random.stem.mp4", R)
     S, rate = stempeg.read_stems(
         "./random.stem.mp4"
     )

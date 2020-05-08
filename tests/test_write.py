@@ -46,13 +46,13 @@ def test_multistream_containers(audio, multistream_format, nb_streams):
         suffix='.' + multistream_format
     ) as tempfile:
         stream_names = [str(k) for k in range(nb_streams)]
-        stempeg.write_streams(
+        stempeg.write_stems(
             tempfile.name,
             audio,
             sample_rate=44100,
             stream_names=stream_names
         )
-        loaded_audio, rate = stempeg.read_streams(tempfile.name)
+        loaded_audio, rate = stempeg.read_stems(tempfile.name)
         assert audio.shape == loaded_audio.shape
         if multistream_format == "mp4":
             info = stempeg.Info(tempfile.name)
@@ -68,13 +68,13 @@ def test_multichannel_containers(audio, multichannel_format):
         delete=False,
         suffix='.' + multichannel_format
     ) as tempfile:
-        stempeg.write_streams(
+        stempeg.write_stems(
             tempfile.name,
             audio,
             sample_rate=44100,
             streams_as_multichannel=True
         )
-        loaded_audio, rate = stempeg.read_streams(
+        loaded_audio, rate = stempeg.read_stems(
             tempfile.name,
             stems_from_multichannel=True
         )
@@ -86,7 +86,7 @@ def test_multifileformats(audio, multifile_format):
         delete=False,
         suffix='.' + multifile_format
     ) as tempfile:
-        stempeg.write_streams(
+        stempeg.write_stems(
             tempfile.name,
             audio,
             sample_rate=44100,
@@ -101,7 +101,7 @@ def test_stereo(audio, multifile_format):
             suffix='.' + multifile_format
         ) as tempfile:
             stempeg.write_audio(tempfile.name, audio, sample_rate=44100)
-            loaded_audio, rate = stempeg.read_streams(
+            loaded_audio, rate = stempeg.read_stems(
                 tempfile.name,
             )
             assert audio.shape == loaded_audio.shape
@@ -115,4 +115,4 @@ def test_ffmpeg_errors(audio):
                 delete=False,
                 suffix='.wav'
             ) as tempfile:
-                stempeg.write_streams(tempfile.name, audio, sample_rate=44100)
+                stempeg.write_stems(tempfile.name, audio, sample_rate=44100)

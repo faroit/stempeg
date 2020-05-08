@@ -19,12 +19,8 @@ def _to_ffmpeg_time(n):
     return '%d:%02d:%09.6f' % (h, m, s)
 
 
-def read_stems(*args, **kwargs):
-    return read_streams(*args, **kwargs)
-
-
-def read_streams(
-    path,
+def read_stems(
+    filename,
     start=None,
     duration=None,
     stem_id=None,
@@ -37,7 +33,7 @@ def read_streams(
 
     Parameters
     ----------
-    path : str (required)
+    filename : str (required)
         filename of the audio file to load data from.
     start : float (optional)
         Start offset to load from in seconds.
@@ -55,15 +51,15 @@ def read_streams(
         substreams will be loaded from multi-channel pairs
         (defaults to `False`)
     """
-    if not isinstance(path, str):
-        path = path.decode()
+    if not isinstance(filename, str):
+        filename = filename.decode()
     try:
         if info is None:
-            metadata = Info(path)
+            metadata = Info(filename)
         else:
             metadata = info
 
-        ffmpeg.probe(path)
+        ffmpeg.probe(filename)
 
     except ffmpeg._run.Error as e:
         raise Warning(
@@ -105,7 +101,7 @@ def read_streams(
         output_kwargs['map'] = '0:' + str(stem)
         process = (
             ffmpeg
-            .input(path)
+            .input(filename)
             .output('pipe:', **output_kwargs)
             .run_async(pipe_stdout=True, pipe_stderr=True))
         buffer, _ = process.communicate()

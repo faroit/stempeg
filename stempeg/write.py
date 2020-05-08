@@ -48,6 +48,7 @@ def check_available_aac_encoders():
         return None
 
 
+# TODO: test single estimates
 def write_audio(
     path,
     data,
@@ -103,13 +104,14 @@ def write_audio(
         raise Warning(f'FFMPEG error: {process.stderr.read()}')
 
 
-def write_stems(
+def write_ni_stems(
     path,
     data,
     sample_rate=44100,
     stream_names=None
 ):
-    write_streams(
+    """Shortcut for Native Instruments stems format"""
+    write_stems(
         path,
         data,
         sample_rate=sample_rate,
@@ -122,7 +124,7 @@ def write_stems(
     )
 
 
-def write_streams(
+def write_stems(
     path,
     data,
     sample_rate=44100,
@@ -168,32 +170,32 @@ def write_streams(
     Notes
     -----
 
-    The procedure for writing stream files varies depending of the
-    specified output container format. There are two possible
-    stream saving is done:
+The procedure for writing stream files varies depending of the
+specified output container format. There are two possible
+stream saving is done:
 
-    1.) container supports multiple streams (`mp4/m4a`, `opus`, `mka`)
-    2.) container does not support multiple streams (`wav`, `mp3`, `flac`)
+1.) container supports multiple streams (`mp4/m4a`, `opus`, `mka`)
+2.) container does not support multiple streams (`wav`, `mp3`, `flac`)
 
-    For 1.) we provide two options:
+For 1.) we provide two options:
 
-    1a.) streams will be saved as substreams aka
-         when `streams_as_multichannel=False` (default)
-    1b.) streams will be aggregated into channels and saved as
-         multichannel file.
-         Here the `audio` tensor of `shape=(streams, samples, 2)`
-         will be converted to a single-stream multichannel audio
-         `(samples, streams*2)`. This option is activated using
-         `streams_as_multichannel=True`
-    1c.) streams will be saved as multiple files when `streams_as_files` is active
+1a.) streams will be saved as substreams aka
+        when `streams_as_multichannel=False` (default)
+1b.) streams will be aggregated into channels and saved as
+        multichannel file.
+        Here the `audio` tensor of `shape=(streams, samples, 2)`
+        will be converted to a single-stream multichannel audio
+        `(samples, streams*2)`. This option is activated using
+        `streams_as_multichannel=True`
+1c.) streams will be saved as multiple files when `streams_as_files` is active
 
-    For 2.), when the container does not support multiple streams there
-    are also two options:
+For 2.), when the container does not support multiple streams there
+are also two options:
 
-    2a) `streams_as_multichannel` has to be set to True (See 1b) otherwise an
-        error will be raised. Note that this only works for `wav` and `flac`).
-        * file ending of `path` determines the container (but not the codec!).
-    2b) `streams_as_files` so that multiple files will be created when `streams_as_files` is active
+2a) `streams_as_multichannel` has to be set to True (See 1b) otherwise an
+    error will be raised. Note that this only works for `wav` and `flac`).
+    * file ending of `path` determines the container (but not the codec!).
+2b) `streams_as_files` so that multiple files will be created when `streams_as_files` is active
 
 
     """
@@ -220,6 +222,8 @@ def write_streams(
         output_sample_rate = sample_rate
 
     if isinstance(data, dict):
+        # TODO: what about ordered dicts?
+        # alternatively, pass an sort order
         keys = data.keys()
         values = data.values()
         data = np.array(list(values))

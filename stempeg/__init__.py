@@ -1,7 +1,5 @@
-from .read import read_streams
 from .read import read_stems
 from .read import Info
-from .write import write_streams
 from .write import write_stems
 from .write import write_audio
 from .write import check_available_aac_encoders
@@ -176,7 +174,7 @@ def stem2files(
     else:
         stream_names = None
 
-    write_streams(
+    write_stems(
         op.join(rootpath, basename, "*." + format),
         data=S,
         sample_rate=sr,
