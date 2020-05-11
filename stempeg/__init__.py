@@ -178,6 +178,6 @@ def stem2files(
         op.join(rootpath, basename, "*." + format),
         data=S,
         sample_rate=sr,
-        streams_as_files=True,
+        stems_as_files=True,
         stream_names=stream_names
     )

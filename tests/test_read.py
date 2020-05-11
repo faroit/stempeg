@@ -25,7 +25,10 @@ def test_stem_id():
             stempeg.example_stem_path(),
             stem_id=k
         )
-        assert Sk.shape[2] == 2
+        # test number of channels
+        assert Sk.shape[-1] == 2
+        # test dim
+        assert Sk.ndim == 2
 
 
 def test_shape():

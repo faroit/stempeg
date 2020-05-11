@@ -64,8 +64,8 @@ def write_audio(
     path : str
         Output file_name of the streams file
     data : array_like
-        The tensor of Matrix of streams. The data shape is formatted as
-        :code:`streams x samples x channels`.
+        The matrix of audio. The data shape is formatted as
+        :code:`samples x channels` or `samples` for single-channel.
     sample_rate : int
         Data samplerate. Defaults to 44100 Hz.
     output_sample_rate : int
@@ -84,7 +84,14 @@ def write_audio(
     if output_sample_rate is None:
         output_sample_rate = sample_rate
 
-    input_kwargs = {'ar': sample_rate, 'ac': data.shape[-1]}
+    if data.ndim == 1:
+        nb_channels = 1
+    elif data.ndim == 2:
+        nb_channels = data.shape[-1]
+    else:
+        raise RuntimeError("Number of channels not supported")
+
+    input_kwargs = {'ar': sample_rate, 'ac': nb_channels}
     output_kwargs = {'ar': output_sample_rate, 'strict': '-2'}
     if bitrate:
         output_kwargs['audio_bitrate'] = bitrate
@@ -104,6 +111,67 @@ def write_audio(
         raise Warning(f'FFMPEG error: {process.stderr.read()}')
 
 
+def build_channel_map(nb_streams, nb_channels, stream_names):
+    if nb_channels == 1:
+        return (
+            [
+                '-filter_complex',
+                # set merging
+                ';'.join(
+                    "[a:0]pan=mono| c0=c%d[a%d]" % (
+                        idx, idx
+                    )
+                    for idx in range(nb_streams)
+                ),
+            ]
+        ) + list(
+            chain.from_iterable(
+                [
+                    [
+                        '-map',
+                        "[a%d]" % idx,
+                        "-metadata:s:a:%d" % idx,
+                        "handler_name=%s" % stream_names[idx],
+                        "-metadata:s:a:%d" % idx,
+                        "title=%s" % stream_names[idx]
+                    ]
+                    for idx in range(nb_streams)
+                ]
+            )
+        )
+    elif nb_channels == 2:
+        return (
+            [
+                '-filter_complex',
+                # set merging
+                ';'.join(
+                    "[a:0]pan=stereo| c0=c%d | c1=c%d[a%d]" % (
+                        idx * 2,
+                        idx * 2 + 1,
+                        idx
+                    )
+                    for idx in range(nb_streams)
+                ),
+            ]
+        ) + list(
+            chain.from_iterable(
+                [
+                    [
+                        '-map',
+                        "[a%d]" % idx,
+                        "-metadata:s:a:%d" % idx,
+                        "handler_name=%s" % stream_names[idx],
+                        "-metadata:s:a:%d" % idx,
+                        "title=%s" % stream_names[idx]
+                    ]
+                    for idx in range(nb_streams)
+                ]
+            )
+        )
+    else:
+        raise NotImplementedError("not works")
+
+
 def write_ni_stems(
     path,
     data,
@@ -111,6 +179,21 @@ def write_ni_stems(
     stream_names=None
 ):
     """Shortcut for Native Instruments stems format"""
+    # TODO: Check for stereo
+    if data.ndim != 3:
+        warnings.warning("Please pass multiple streams", UserWarning)
+
+    if data.shape[2] % 2 != 0:
+        warnings.warning("Only stereo streams are supported", UserWarning)
+
+    if data.shape[1] % 1024 != 0:
+        logging.warning(
+            "Number of samples does not divide by 1024, be aware that "
+            "the AAC encoder add silence to the input signal"
+        )
+
+    # TODO: check samplerate
+    # raise error if checks not passed
     write_stems(
         path,
         data,
@@ -119,7 +202,7 @@ def write_ni_stems(
         codec="aac",
         bitrate=256000,
         ffmpeg_params=None,
-        streams_as_multichannel=False,
+        stems_as_channels=False,
         stream_names=stream_names
     )
 
@@ -132,8 +215,8 @@ def write_stems(
     codec=None,
     bitrate=None,
     ffmpeg_params=None,
-    streams_as_multichannel=False,
-    streams_as_files=False,
+    stems_as_channels=False,
+    stems_as_files=False,
     stream_names=None
 ):
     """Write streams from numpy Tensor
@@ -157,10 +240,10 @@ def write_stems(
         Bitrate in Bits per second. Defaults to `None`
     ffmpeg_params : list(str)
         List of additional ffmpeg parameters
-    streams_as_multichannel : bool
+    stems_as_channels : bool
         streams will be saved as multiple channels
         (if multichannel is supported).
-    streams_as_files : bool
+    stems_as_files : bool
         streams will be saved as multiple files. Here, the basename(path),
         is ignored and just the parent path + extension is used.
     stream_names : list(str)
@@ -170,32 +253,34 @@ def write_stems(
     Notes
     -----
 
-The procedure for writing stream files varies depending of the
-specified output container format. There are two possible
-stream saving is done:
+    The procedure for writing stream files varies depending of the
+    specified output container format. There are two possible
+    stream saving is done:
 
-1.) container supports multiple streams (`mp4/m4a`, `opus`, `mka`)
-2.) container does not support multiple streams (`wav`, `mp3`, `flac`)
+    1.) container supports multiple streams (`mp4/m4a`, `opus`, `mka`)
+    2.) container does not support multiple streams (`wav`, `mp3`, `flac`)
 
-For 1.) we provide two options:
+    For 1.) we provide two options:
 
-1a.) streams will be saved as substreams aka
-        when `streams_as_multichannel=False` (default)
-1b.) streams will be aggregated into channels and saved as
+    1a.) streams will be saved as substreams aka
+            when `stems_as_channels=False` (default)
+    1b.) streams will be aggregated into channels and saved as
         multichannel file.
         Here the `audio` tensor of `shape=(streams, samples, 2)`
         will be converted to a single-stream multichannel audio
         `(samples, streams*2)`. This option is activated using
-        `streams_as_multichannel=True`
-1c.) streams will be saved as multiple files when `streams_as_files` is active
+        `stems_as_channels=True`
+    1c.) streams will be saved as multiple files when `stems_as_files` is
+         active
 
-For 2.), when the container does not support multiple streams there
-are also two options:
+    For 2.), when the container does not support multiple streams there
+    are also two options:
 
-2a) `streams_as_multichannel` has to be set to True (See 1b) otherwise an
-    error will be raised. Note that this only works for `wav` and `flac`).
-    * file ending of `path` determines the container (but not the codec!).
-2b) `streams_as_files` so that multiple files will be created when `streams_as_files` is active
+    2a) `stems_as_channels` has to be set to True (See 1b) otherwise an
+        error will be raised. Note that this only works for `wav` and `flac`).
+        * file ending of `path` determines the container (but not the codec!).
+    2b) `stems_as_files` so that multiple files will be created when
+        stems_as_files` is active
 
 
     """
@@ -232,17 +317,10 @@ are also two options:
         if stream_names is None:
             stream_names = [str(k) for k in range(data.shape[0])]
 
-    if data.shape[1] % 1024 != 0:
-        logging.warning(
-            "Number of samples does not divide by 1024, be aware that "
-            "the AAC encoder add silence to the input signal"
-        )
+    if data.ndim != 3:
+        raise RuntimeError("Input tensor dimension should be 3d")
 
-    if data.ndim == 3:
-        nb_streams = data.shape[0]
-    else:
-        nb_streams = 1
-
+    nb_streams = data.shape[0]
     nb_channels = data.shape[-1]
 
     if nb_streams == 1:
@@ -257,116 +335,91 @@ are also two options:
             bitrate=bitrate
         )
     else:
-        if nb_channels % 2 != 0:
-            warnings.warning("Only stereo streams are supported", UserWarning)
-
         # For more than one stream, streams will be reshaped
         # into the channel dimension, always assuming we have stereo channels
         # (streams, samples, 2)->(samples, streams*2)
         # this multichannel file will be temporarily
         # saved as wav file
-
-        if not streams_as_files:
+        if not stems_as_files:
             # swap stream axis
             data = data.transpose(1, 0, 2)
             # aggregate stream and channels
             data = data.reshape(data.shape[0], -1)
 
-    if streams_as_multichannel:
-        data = np.squeeze(data)
-        write_audio(
-            path=path,
-            data=data,
-            sample_rate=sample_rate,
-            output_sample_rate=output_sample_rate,
-            codec=codec,
-            bitrate=bitrate
-        )
-    elif streams_as_files:
-        for idx in range(nb_streams):
-            p = Path(path)
-            stream_filepath = str(Path(
-                p.parent, stream_names[idx] + p.suffix
-            ))
+        if stems_as_channels:
+            data = np.squeeze(data)
             write_audio(
-                path=stream_filepath,
-                data=data[idx],
+                path=path,
+                data=data,
                 sample_rate=sample_rate,
                 output_sample_rate=output_sample_rate,
                 codec=codec,
                 bitrate=bitrate
             )
-    else:
-        # create temporary file and merge afterwards
-        with tmp.NamedTemporaryFile(suffix='.wav') as tempfile:
-            # write audio to temporary file
-            write_audio(
-                path=tempfile.name,
-                data=data,
-                sample_rate=sample_rate,
-                output_sample_rate=output_sample_rate,
-                codec='wav'
-            )
+        elif stems_as_files:
+            # TODO: add multiprocessing
+            for idx in range(nb_streams):
+                p = Path(path)
+                stream_filepath = str(Path(
+                    p.parent, stream_names[idx] + p.suffix
+                ))
+                write_audio(
+                    path=stream_filepath,
+                    data=data[idx],
+                    sample_rate=sample_rate,
+                    output_sample_rate=output_sample_rate,
+                    codec=codec,
+                    bitrate=bitrate
+                )
+        else:
+            # create temporary file and merge afterwards
+            with tmp.NamedTemporaryFile(suffix='.wav') as tempfile:
+                # write audio to temporary file
+                write_audio(
+                    path=tempfile.name,
+                    data=data,
+                    sample_rate=sample_rate,
+                    output_sample_rate=output_sample_rate,
+                    codec='wav'
+                )
 
-            # check if path is available and creat it
-            Path(path).parent.mkdir(parents=True, exist_ok=True)
+                # check if path is available and creat it
+                Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-            # convert tempfile to multistream file assuming
-            # each stream occupies a pair of channels
-            cmd = (
-                [
-                    'ffmpeg',
-                    '-y',
-                    '-acodec', 'pcm_s%dle' % (16),
-                    '-i', tempfile.name
-                ] +
-                (
+                channel_map = build_channel_map(
+                    nb_streams=nb_streams,
+                    nb_channels=nb_channels,
+                    stream_names=stream_names
+                )
+
+                # convert tempfile to multistream file assuming
+                # each stream occupies a pair of channels
+                cmd = (
                     [
-                        '-filter_complex',
-                        # set merging
-                        ';'.join(
-                            "[a:0]pan=stereo| c0=c%d | c1=c%d[a%d]" % (
-                                idx * 2,
-                                idx * 2 + 1,
-                                idx
-                            )
-                            for idx in range(nb_streams)
-                        ),
-                    ]
-                ) + list(
-                    chain.from_iterable(
-                        [
-                            [
-                                '-map',
-                                "[a%d]" % idx,
-                                "-metadata:s:a:%d" % idx,
-                                "handler_name=%s" % stream_names[idx],
-                                "-metadata:s:a:%d" % idx,
-                                "title=%s" % stream_names[idx]
-                            ]
-                            for idx in range(nb_streams)
-                        ]
-                    )
-                ) +
-                [
-                    '-vn'
-                ] +
-                (
-                    ['-c:a', _to_ffmpeg_codec(codec)]
-                    if (codec is not None) else []
-                ) +
-                [
-                    '-ar', "%d" % output_sample_rate,
-                    '-strict', '-2',
-                    '-loglevel', 'error'
-                ] +
-                (['-ab', str(bitrate)] if (bitrate is not None) else []) +
-                (ffmpeg_params if ffmpeg_params else []) +
-                [path]
-            )
-            try:
-                sp.check_call(cmd)
-            except sp.CalledProcessError as err:
-                raise RuntimeError(err) from None
-            finally:
-                tempfile.close()
+                        'ffmpeg',
+                        '-y',
+                        '-acodec', 'pcm_s%dle' % (16),
+                        '-i', tempfile.name
+                    ] + channel_map +
+                    [
+                        '-vn'
+                    ] +
+                    (
+                        ['-c:a', _to_ffmpeg_codec(codec)]
+                        if (codec is not None) else []
+                    ) +
+                    [
+                        '-ar', "%d" % output_sample_rate,
+                        '-strict', '-2',
+                        '-loglevel', 'error'
+                    ] +
+                    (['-ab', str(bitrate)] if (bitrate is not None) else []) +
+                    (ffmpeg_params if ffmpeg_params else []) +
+                    [path]
+                )
+                try:
+                    sp.check_call(cmd)
+                except sp.CalledProcessError as err:
+                    raise RuntimeError(err) from None
+                finally:
+                    tempfile.close()

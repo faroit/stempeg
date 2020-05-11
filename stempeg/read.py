@@ -24,10 +24,11 @@ def read_stems(
     start=None,
     duration=None,
     stem_id=None,
+    always_3d=False,
     dtype=np.float32,
     info=None,
     sample_rate=None,
-    stems_from_multichannel=False
+    stems_from_channels=False
 ):
     """Read stems into numpy tensor
 
@@ -41,6 +42,11 @@ def read_stems(
         Duration to load in seconds.
     stem_id : int (optional)
         subbstream id, defauls to `None` (all substreams are loaded)
+    always_3d : bool, optional
+        By default, reading a single-stream audio file will return a
+        two-dimensional array.  With ``always_3d=True``, audio data is
+        always returned as a three-dimensional array, even if the audio
+        file has only one stream.
     dtype : (Optional)
         Numpy data type to use, default to `np.float32`.
     info : Info (Optional)
@@ -68,12 +74,14 @@ def read_stems(
     if 'streams' not in metadata.info or metadata.nb_audio_streams == 0:
         raise Warning('No stream was found with ffprobe')
 
-    if stems_from_multichannel:
+    if stems_from_channels:
         if metadata.nb_audio_streams != 1:
-            raise Warning('Stems should be encoded as 1 substream')
+            raise Warning(
+                'In this configuration, only a single substream is processed'
+            )
         else:
-            if metadata.audio_streams[0]['channels'] % 2 != 0:
-                raise Warning('Stems should be encoded as stereo pairs')
+            if metadata.audio_streams[0]['channels'] % stems_from_channels != 0:
+                raise Warning('Stems should be encoded as multi-channel')
             else:
                 substreams = 0
     else:
@@ -118,14 +126,16 @@ def read_stems(
         warnings.warning("Stems differ in length and were shortend")
         min_length = np.min(stem_durations)
         stems = [t[:min_length, :] for t in stems]
+        # TODO: Also check number of channels are the same for all
 
     stems = np.array(stems)
-    if stems_from_multichannel:
+    if stems_from_channels and stems.shape[-1] > 1:
         stems = stems.transpose(1, 0, 2)
-        stems = stems.reshape(stems.shape[0], stems.shape[1], -1, 2)
-        stems = stems.transpose(2, 0, 3, 1)
+        stems = stems.reshape(stems.shape[0], stems.shape[1], -1, stems_from_channels)
+        stems = stems.transpose(2, 0, 3, 1)[..., 0]
 
-    stems = np.squeeze(stems)
+    if not always_3d:
+        stems = np.squeeze(stems)
     return stems, sample_rate
 
 

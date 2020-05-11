@@ -72,18 +72,18 @@ stempeg.write_stems(
 # stempeg also supports to load merged-multichannel streams using
 stems, rate = stempeg.read_stems(
     "test.wav",
-    stems_from_multichannel=True
+    stems_from_channels=2
 )
 
 # mp3 does not support multiple channels,
-# therefore we have to use `streams_as_files`
+# therefore we have to use `stems_as_files`
 # outputs are named ["output/0.mp3", "output/1.mp3"]
 # for named files, provide a dict or use `stream_names`
-stempeg.write_st(
+stempeg.write_stems(
     "test.stem/*.mp3",
     stems,
     sample_rate=96000,
     output_sample_rate=44100,
-    streams_as_files=True,
+    stems_as_files=True,
     stream_names=["mix", "drums", "bass", "other", "vocals"]
 )
