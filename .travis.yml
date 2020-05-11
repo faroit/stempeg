@@ -15,10 +15,10 @@ python:
   - "3.8"
 
 env:
+    - FFMPEG_VERSION=4.2
     - FFMPEG_VERSION=4.1
     - FFMPEG_VERSION=4.0.2
     - FFMPEG_VERSION=3.4
-    - FFMPEG_VERSION=2.8.6
     - FFMPEG_VERSION=3.2.4
 
 before_install:
