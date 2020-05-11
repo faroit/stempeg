@@ -77,7 +77,10 @@ def read_stems(
             else:
                 substreams = 0
     else:
-        substreams = metadata.audio_stream_idx()
+        if stem_id is not None:
+            substreams = stem_id
+        else:
+            substreams = metadata.audio_stream_idx()
 
     if not isinstance(substreams, list):
         substreams = [substreams]
