@@ -53,7 +53,10 @@ def test_multistream_containers(audio, multistream_format, nb_streams):
                 sample_rate=44100,
                 stream_names=stream_names
             )
-            loaded_audio, rate = stempeg.read_stems(tempfile.name, always_3d=True)
+            loaded_audio, rate = stempeg.read_stems(
+                tempfile.name,
+                always_3d=True
+            )
             assert audio.shape == loaded_audio.shape
             if multistream_format == "mp4":
                 info = stempeg.Info(tempfile.name)
