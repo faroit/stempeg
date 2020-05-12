@@ -1,6 +1,5 @@
 import numpy as np
 import os.path
-import subprocess
 import subprocess as sp
 import os
 import json
@@ -80,7 +79,9 @@ def read_stems(
                 'In this configuration, only a single substream is processed'
             )
         else:
-            if metadata.audio_streams[0]['channels'] % stems_from_channels != 0:
+            if metadata.audio_streams[0][
+                'channels'
+            ] % stems_from_channels != 0:
                 raise Warning('Stems should be encoded as multi-channel')
             else:
                 substreams = 0
@@ -131,7 +132,9 @@ def read_stems(
     stems = np.array(stems)
     if stems_from_channels and stems.shape[-1] > 1:
         stems = stems.transpose(1, 0, 2)
-        stems = stems.reshape(stems.shape[0], stems.shape[1], -1, stems_from_channels)
+        stems = stems.reshape(
+            stems.shape[0], stems.shape[1], -1, stems_from_channels
+        )
         stems = stems.transpose(2, 0, 3, 1)[..., 0]
 
     if not always_3d:
