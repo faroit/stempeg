@@ -130,10 +130,15 @@ def build_channel_map(nb_streams, nb_channels, stream_names):
                     [
                         '-map',
                         "[a%d]" % idx,
+                        # add title tag (e.g. displayed by VLC)
                         "-metadata:s:a:%d" % idx,
-                        "handler_name=%s" % stream_names[idx],
+                        "title=%s_title" % stream_names[idx],
+                        # add handler tag (e.g. read by ffmpeg < 4.1)
                         "-metadata:s:a:%d" % idx,
-                        "title=%s" % stream_names[idx]
+                        "handler=%s" % stream_names[idx],
+                        # add handler tag for ffmpeg >= 4.1
+                        "-metadata:s:a:%d" % idx,
+                        "handler_name=%s" % stream_names[idx]
                     ]
                     for idx in range(nb_streams)
                 ]
@@ -159,10 +164,15 @@ def build_channel_map(nb_streams, nb_channels, stream_names):
                     [
                         '-map',
                         "[a%d]" % idx,
+                        # add title tag (e.g. displayed by VLC)
                         "-metadata:s:a:%d" % idx,
-                        "handler_name=%s" % stream_names[idx],
+                        "title=%s_title" % stream_names[idx],
+                        # add handler tag (e.g. read by ffmpeg -i)
                         "-metadata:s:a:%d" % idx,
-                        "title=%s" % stream_names[idx]
+                        "handler=%s" % stream_names[idx],
+                        # add handler tag for ffmpeg >= 4.1
+                        "-metadata:s:a:%d" % idx,
+                        "handler_name=%s" % stream_names[idx]
                     ]
                     for idx in range(nb_streams)
                 ]

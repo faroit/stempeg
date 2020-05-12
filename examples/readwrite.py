@@ -66,7 +66,7 @@ stempeg.write_stems(
     "test.wav",
     stems,
     sample_rate=96000,
-    streams_as_multichannel=True
+    stems_as_channels=True
 )
 
 # stempeg also supports to load merged-multichannel streams using
@@ -80,7 +80,7 @@ stems, rate = stempeg.read_stems(
 # outputs are named ["output/0.mp3", "output/1.mp3"]
 # for named files, provide a dict or use `stream_names`
 stempeg.write_stems(
-    "test.stem/*.mp3",
+    "test.stem/*.ogg",
     stems,
     sample_rate=96000,
     output_sample_rate=44100,
