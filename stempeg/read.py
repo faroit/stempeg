@@ -52,7 +52,7 @@ def read_stems(
         Pass ffmpeg `Info` object to reduce nunber of probes on file
     sample_rate : int
         Sample rate to load audio with. Defaults to `None`
-    stems_from_multichannel : bool
+    stems_from_channels : bool
         substreams will be loaded from multi-channel pairs
         (defaults to `False`)
     """
