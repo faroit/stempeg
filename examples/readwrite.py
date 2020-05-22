@@ -1,4 +1,4 @@
-"""Opens a stem file and saves (reëncodes) back to a stem file
+"""Opens a stem file and saves (re-encodes) back to a stem file
 """
 import argparse
 import stempeg
