@@ -46,7 +46,7 @@ def example_stem_path():
     """
     return pkg_resources.resource_filename(
         __name__, 
-        'data/The Easton Ellises - Falcon 69.stem.mp4'
+        'data/The Easton Ellises - Falcon 69.stem.m4a'
     )
 
 
