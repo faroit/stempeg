@@ -2,7 +2,11 @@
 *.wav
 .pytest_cache/
 miniconda
-.env*/
+.env/
+envffmpeg/
+.vscode/
+.circleci/
+
 
 #####=== OSX ===#####
 .DS_Store
