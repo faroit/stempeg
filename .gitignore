@@ -2,7 +2,7 @@
 *.wav
 .pytest_cache/
 miniconda
-.env/
+.env*/
 
 #####=== OSX ===#####
 .DS_Store
