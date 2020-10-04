@@ -50,6 +50,20 @@ def example_stem_path():
     )
 
 
+def default_metadata():
+    """Get the path to included stems metadata.
+
+    Returns
+    -------
+    filename : str
+        Path to the json file
+    """
+    return pkg_resources.resource_filename(
+        __name__,
+        'data/default_metadata.json'
+    )
+
+
 def ffmpeg_version():
     """Returns the available ffmpeg version
 
@@ -170,14 +184,14 @@ def stem2files(
     if len(set(info.title_streams)) == len(info.title_streams):
         # titles contain duplicates
         # lets not use the metadata
-        stream_names = info.title_streams
+        stem_names = info.title_streams
     else:
-        stream_names = None
+        stem_names = None
 
     write_stems(
         op.join(rootpath, basename, "*." + format),
         data=S,
         sample_rate=sr,
         stems_as_files=True,
-        stream_names=stream_names
+        stem_names=stem_names
     )

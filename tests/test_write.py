@@ -6,7 +6,7 @@ import subprocess as sp
 
 
 @pytest.fixture(params=[1, 2, 4])
-def nb_streams(request):
+def nb_stems(request):
     return request.param
 
 
@@ -21,8 +21,8 @@ def nb_samples(request):
 
 
 @pytest.fixture
-def audio(request, nb_streams, nb_samples, nb_channels):
-    return np.random.random((nb_streams, nb_samples, nb_channels))
+def audio(request, nb_stems, nb_samples, nb_channels):
+    return np.random.random((nb_stems, nb_samples, nb_channels))
 
 
 @pytest.fixture(params=["mp4"])
@@ -40,18 +40,18 @@ def multifile_format(request):
     return request.param
 
 
-def test_multistream_containers(audio, multistream_format, nb_streams):
-    if nb_streams > 1:
+def test_multistream_containers(audio, multistream_format, nb_stems):
+    if nb_stems > 1:
         with tmp.NamedTemporaryFile(
             delete=False,
             suffix='.' + multistream_format
         ) as tempfile:
-            stream_names = [str(k) for k in range(nb_streams)]
+            stem_names = [str(k) for k in range(nb_stems)]
             stempeg.write_stems(
                 tempfile.name,
                 audio,
                 sample_rate=44100,
-                stream_names=stream_names
+                stem_names=stem_names
             )
             loaded_audio, rate = stempeg.read_stems(
                 tempfile.name,
@@ -60,10 +60,10 @@ def test_multistream_containers(audio, multistream_format, nb_streams):
             assert audio.shape == loaded_audio.shape
             if multistream_format == "mp4":
                 info = stempeg.Info(tempfile.name)
-                loaded_stream_names = info.title_streams
+                loaded_stem_names = info.title_streams
                 # check if titles could be extracted
                 assert all(
-                    [a == b for a, b in zip(stream_names, loaded_stream_names)]
+                    [a == b for a, b in zip(stem_names, loaded_stem_names)]
                 )
 
 

@@ -53,7 +53,8 @@ def read_stems(
     sample_rate : int
         Sample rate to load audio with. Defaults to `None`
     stems_from_channels : bool
-        substreams will be loaded from multi-channel pairs
+        stems will be extracted from multichannel-pairs
+        e.g. 8 channels will be converted to 4 stereo pairs
         (defaults to `False`)
     """
     if not isinstance(filename, str):

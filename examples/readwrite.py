@@ -78,12 +78,12 @@ stems, rate = stempeg.read_stems(
 # mp3 does not support multiple channels,
 # therefore we have to use `stems_as_files`
 # outputs are named ["output/0.mp3", "output/1.mp3"]
-# for named files, provide a dict or use `stream_names`
+# for named files, provide a dict or use `stem_names`
 stempeg.write_stems(
     "test.stem/*.ogg",
     stems,
     sample_rate=96000,
     output_sample_rate=44100,
     stems_as_files=True,
-    stream_names=["mix", "drums", "bass", "other", "vocals"]
+    stem_names=["mix", "drums", "bass", "other", "vocals"]
 )
