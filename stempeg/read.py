@@ -10,8 +10,10 @@ import pprint
 
 def _to_ffmpeg_time(n):
     """ Format number of seconds to time expected by FFMPEG.
-    :param n: Time in seconds to format.
-    :returns: Formatted time in FFMPEG format.
+    n: int
+        Time in seconds to format.
+
+    returns: Formatted time in FFMPEG format.
     """
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)

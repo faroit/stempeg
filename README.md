@@ -96,4 +96,3 @@ _stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles.
 
 ```bash
 stem2wav The Easton Ellises - Falcon 69.stem.mp4 -s 1.0 -t 2.5
-```

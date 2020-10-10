@@ -15,6 +15,25 @@ import shutil
 __version__ = "0.2.0"
 
 
+# TODO: decide which check to use
+def _check_ffmpeg_install():
+    """ Ensure FFMPEG binaries are available.
+    :raise OSError: If ffmpeg or ffprobe is not found.
+    """
+    for binary in ('ffmpeg', 'ffprobe'):
+        if shutil.which(binary) is None:
+            raise OSError('{} binary not found'.format(binary))
+
+
+def _check_mp4box_install():
+    """ Ensure MP4box binary is available.
+    :raise OSError: If mp4box is not found.
+    """
+    for binary in ('mp4box'):
+        if shutil.which(binary) is None:
+            raise OSError('{} binary not found'.format(binary))
+
+
 def cmd_exist(cmd):
     try:
         from shutil import which
