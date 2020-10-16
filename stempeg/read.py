@@ -1,8 +1,4 @@
 import numpy as np
-import os.path
-import subprocess as sp
-import os
-import json
 import warnings
 import ffmpeg
 import pprint

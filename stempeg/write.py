@@ -10,7 +10,12 @@ from pathlib import Path
 from multiprocessing import Pool
 
 import ffmpeg
+
+from .cmds import FFMPEG_PATH
+from .cmds import mp4box_exists
+
 import numpy as np
+from setuptools.command.egg_info import write_setup_requirements
 
 import stempeg
 
@@ -23,7 +28,7 @@ def check_available_aac_encoders():
 
     """
     cmd = [
-        'ffmpeg',
+        FFMPEG_PATH,
         '-v', 'error',
         '-codecs'
     ]
@@ -54,7 +59,7 @@ def get_aac_codec():
             codec = 'libfdk_aac'
         else:
             logging.warning(
-                "For the best quality, install `libfdk_aac` codec."
+                "For the better audio quality, install `libfdk_aac` codec."
             )
             codec = 'aac'
     else:
@@ -158,108 +163,36 @@ def build_channel_map(nb_stems, nb_channels, stem_names=[]):
         raise NotImplementedError("Stempeg only support mono or stereo stems")
 
 
-class NIStemsMapper(object):
-    """Write stems using native instruments stems format
+class Writer(object):
+    """Base class for writer
 
-    this is essentially a shortcut to `write_stems` using specific
-    defaults and adding additional metadata using mp4box.
-
-    audiocodec. Defaults to `None` which automatically selects
-        either `libfdk_aac` or `aac` in that order, by availability.
-        For the best quality, use `libfdk_aac`.
-
-    Process is originally created by Native Instrument as shown here:
-    https://github.com/axeldelafosse/stemgen/blob/909d9422af0738457303962262f99072a808d0c1/ni-stem/_internal.py#L38
-
+    Takes tensor and writes to disk
     """
-    def __init__(
-        self,
-        bitrate=256000,
-        default_metadata=None,
-        stems_metadata=None
-    ):
-        # TODO: rename default metadata
-        self.bitrate = bitrate
-        self.default_metadata = default_metadata
-        self.stems_metadata = stems_metadata
-        self.codec = get_aac_codec()
 
-    def __call__(
-        self,
-        path,
-        data,
-        sample_rate
-    ):
-        # TODO: create errors
-        if data.ndim != 3:
-            warnings.warning("Please pass multiple stems", UserWarning)
+    def __init__(self):
+        pass
 
-        if data.shape[2] % 2 != 0:
-            warnings.warning("Only stereo stems are supported", UserWarning)
+    def __call__(self, data, path, sample_rate):
+        """forward path
 
-        if data.shape[1] % 1024 != 0:
-            logging.warning(
-                "Number of samples does not divide by 1024, be aware that "
-                "the AAC encoder add silence to the input signal"
-            )
-
-        # raise error if checks not passed
-        write_stems(
-            path,
-            data,
-            sample_rate=sample_rate,
-            output_sample_rate=44100,
-            codec=self.codec,
-            bitrate=self.bitrate,
-            ffmpeg_params=None,
-            stems_as_channels=False,
-            stem_names=self.stems_metadata.keys()
-        )
-
-        # add metadata for traktor
-        if self.default_metadata is not None:
-            with open(stempeg.example_stem_path()) as f:
-                metadata = json.load(f)
-        else:
-            metadata = self.default_metadata
-
-        if self.stems_metadata is not None:
-            metadata['stems'] = self.stems_metadata
-        else:
-            nb_stems_metadata = len(metadata["stems"])
-            nb_stems = data.shape[0]
-
-            # enumerate tracks and use default colors
-            if nb_stems != nb_stems_metadata:
-                print("missing stem metadata, using defaults")
-                metadata['stems'] = [
-                    {
-                        "name": "".join(
-                            [
-                                "Stem_", str(i + nb_stems_metadata)
-                            ]
-                        ),
-                        "color": "#000000"
-                    } for i in range(nb_stems)
-                ]
-
-        cmd = (
-            [
-                'mp4box',
-                path,
-                "-udta",
-                "0:type=stem:src=base64," + str(
-                    base64.b64encode(json.dumps(metadata).encode())
-                )
-            ]
-        )
-        try:
-            sp.check_call(cmd)
-        except sp.CalledProcessError as err:
-            raise RuntimeError(err) from None
+        Args:
+            data (array): stems tensor of shape `(stems, samples, channel)`
+            path (str): path where stems should be written
+            sample_rate (float): audio sample rate
+        """
+        pass
 
 
-class FilesMapper(object):
+class FilesWriter(Writer):
+    r"""Save Stems as multiple files
+
+    Extension of `torchaudio.functional.complex_norm` with mono
+
+    Args:
+        power (float): Power of the norm. (Default: `1.0`).
+        mono (bool): Downmix to single channel after applying power norm
+            to maximize
+    """
     def __init__(
         self,
         codec=None,
@@ -295,7 +228,12 @@ class FilesMapper(object):
         path,
         sample_rate
     ):
-
+        """
+        Args:
+            data (array): stems tensor of shape `(stems, samples, channel)`
+            path (str): path where stems should be written
+            sample_rate (float): audio sample rate
+        """
         nb_stems = data.shape[0]
 
         if self.output_sample_rate is None:
@@ -335,7 +273,19 @@ class FilesMapper(object):
             self.join()
 
 
-class ChannelsMapper(object):
+class ChannelsWriter(Writer):
+    """Write stems using multichannel audio
+
+    Args:
+        codec (str):
+            Specifies ffmpeg codec being used. Defaults to `None` which
+            automatically selects default codec for each container
+        bitrate (int):
+            Bitrate in Bits per second. Defaults to None
+        output_sample_rate Optional(float):
+            Optionally, applies resampling, if different to `sample_rate`.
+            Defaults to `None` which `sample_rate`.
+    """
     def __init__(
         self,
         codec=None,
@@ -357,6 +307,11 @@ class ChannelsMapper(object):
         into the channel dimension, always assuming we have
         stereo channels:
             (stems, samples, 2)->(samples, stems*2)
+
+        Args:
+            data (array): stems tensor of shape `(stems, samples, channel)`
+            path (str): path where stems should be written
+            sample_rate (float): audio sample rate
         """
         # check output sample rate
         if self.output_sample_rate is None:
@@ -380,7 +335,21 @@ class ChannelsMapper(object):
         )
 
 
-class StreamsMapper(object):
+class StreamsWriter(Writer):
+    """Write stems using multi-stream audio
+
+    Args:
+        codec (str):
+            Specifies ffmpeg codec being used. Defaults to `None` which
+            automatically selects default codec for each container
+        bitrate (int):
+            Bitrate in Bits per second. Defaults to None
+        output_sample_rate Optional(float):
+            Optionally, applies resampling, if different to `sample_rate`.
+            Defaults to `None` which `sample_rate`.
+        stem_names (list(str)):
+            list of stem names that match the number of stems.
+    """
     def __init__(
         self,
         codec=None,
@@ -399,7 +368,12 @@ class StreamsMapper(object):
         path,
         sample_rate,
     ):
-
+        """
+        Args:
+            data (array): stems tensor of shape `(stems, samples, channel)`
+            path (str): path where stems should be written
+            sample_rate (float): audio sample rate
+        """
         nb_stems, nb_samples, nb_channels = data.shape
 
         if self.output_sample_rate is None:
@@ -438,7 +412,7 @@ class StreamsMapper(object):
             # each stem occupies a pair of channels
             cmd = (
                 [
-                    'ffmpeg',
+                    FFMPEG_PATH,
                     '-y',
                     '-acodec', 'pcm_s%dle' % (16),
                     '-i', tempfile.name
@@ -470,6 +444,132 @@ class StreamsMapper(object):
                 tempfile.close()
 
 
+class NIStemsWriter(Writer):
+    """Write stems using native instruments stems format
+
+    this is essentially a shortcut to `write_stems` using specific
+    defaults and adding additional metadata using mp4box.
+
+    Code  automatically selects
+        either `libfdk_aac` or `aac` in that order, by availability.
+        For the best quality, use `libfdk_aac`.
+
+    Process is originally created by Native Instrument as shown here:
+    https://github.com/axeldelafosse/stemgen/blob/909d9422af0738457303962262f99072a808d0c1/ni-stem/_internal.py#L38
+
+
+    Args:
+        default_metadata (Dict):
+            Default metadatato be injected into the mp4 substream
+        stems_metadata (List):
+            Set track names and colors
+        output_sample_rate Optional(float):
+            Optionally, applies resampling, if different to `sample_rate`.
+            Defaults to `None` which `sample_rate`.
+        codec (str):
+            Specifies ffmpeg codec being used. Defaults to `None` which
+            automatically selects default codec for each container
+        bitrate (int):
+            Bitrate in Bits per second. Defaults to None
+    """
+    def __init__(
+        self,
+        default_metadata=None,
+        stems_metadata=None,
+        output_sample_rate=44100,
+        codec='aac',
+        bitrate=256000
+    ):
+
+        if not mp4box_exists():
+            raise RuntimeError(
+                'mp4box could not be found! '
+                'Please install them before using NIStemsWriter().'
+                'See: https://github.com/faroit/stempeg'
+            )
+        self.bitrate = bitrate
+        self.default_metadata = default_metadata
+        self.stems_metadata = stems_metadata
+        self.output_sample_rate = output_sample_rate
+        if codec == 'aac':
+            self.codec = get_aac_codec()
+        else:
+            self.codec = codec
+
+    def __call__(
+        self,
+        data,
+        path,
+        sample_rate
+    ):
+        if data.ndim != 3:
+            raise RuntimeError("Please pass multiple stems")
+
+        if data.shape[2] % 2 != 0:
+            raise RuntimeError("Only stereo stems are supported")
+
+        if data.shape[1] % 1024 != 0:
+            logging.warning(
+                "Number of samples does not divide by 1024, be aware that "
+                "the AAC encoder add silence to the input signal"
+            )
+
+        write_stems(
+            path,
+            data,
+            sample_rate=sample_rate,
+            writer=StreamsWriter(
+                codec=self.codec,
+                bitrate=self.bitrate,
+                output_sample_rate=self.output_sample_rate,
+                stem_names=[d['name'] for d in self.stems_metadata]
+            )
+        )
+
+        # add metadata for NI compabtibility
+        if self.default_metadata is not None:
+            with open(stempeg.example_stem_path()) as f:
+                metadata = json.load(f)
+        else:
+            metadata = self.default_metadata
+
+        # replace stems metadata from dict
+        if self.stems_metadata is not None:
+            metadata['stems'] = self.stems_metadata
+        else:
+            nb_stems_metadata = len(metadata["stems"])
+            nb_stems = data.shape[0]
+
+            # enumerate tracks and use default colors
+            if nb_stems != nb_stems_metadata:
+                print("missing stem metadata, using defaults")
+                metadata['stems'] = [
+                    {
+                        "name": "".join(
+                            [
+                                "Stem_", str(i + nb_stems_metadata)
+                            ]
+                        ),
+                        "color": "#000000"
+                    } for i in range(nb_stems)
+                ]
+
+        cmd = (
+            [
+                'mp4box',
+                path,
+                "-udta",
+                "0:type=stem:src=base64," + str(
+                    base64.b64encode(json.dumps(metadata).encode())
+                )
+            ]
+        )
+        try:
+            sp.check_call(cmd)
+        except sp.CalledProcessError as err:
+            raise RuntimeError(err) from None
+
+
 def write_audio(
     path,
     data,
@@ -481,23 +581,24 @@ def write_audio(
     """Write multichannel audio from numpy tensor
 
     Args:
-        path: str
-            Output file name. Extension sets container (and default codec)
-        data: array_like
-            Audio tensor. The data shape is formatted as
+        path (str): Output file name
+            . Extension sets container (and default codec)
+        data (array): Audio tensor.
+            The data shape is formatted as
             :code:`shape=(samples, channels)` or `(samples,)`
-        sample_rate: float
-            Samplerate. Defaults to 44100.0 Hz.
-        output_sample_rate: Optional(float)
-            Applies resampling, if different to `sample_rate`.
+        sample_rate (float): Samplerate.
+             Defaults to 44100.0 Hz.
+        output_sample_rate Optional(float):
+            Optionally, applies resampling, if different to `sample_rate`.
             Defaults to `None` which `sample_rate`.
-        bitrate: int
-            Bitrate in Bits per second. Defaults to None
-        codec: str
-            Specifies the codec being used. Defaults to `None` which
+        codec (str):
+            Specifies ffmpeg codec being used. Defaults to `None` which
             automatically selects default codec for each container
+        bitrate (int):
+            Bitrate in Bits per second. Defaults to None
     """
 
+    # TODO: check ffmpeg install
     # check if path is available and creat it
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -535,7 +636,7 @@ def write_stems(
     path,
     data,
     sample_rate=44100,
-    mapper=FilesMapper(stem_names=None)
+    writer=FilesWriter(stem_names=None)
 ):
     """Write stems from numpy Tensor
 
@@ -551,56 +652,55 @@ def write_stems(
                 :code: `{ "name": array_like of shape (samples, channels), ...}`
         sample_rate: int
             Output samplerate. Defaults to 44100 Hz.
-        codec: str
-            audiocodec. Defaults to `None` which automatically selects
-            default codec for container.
-        bitrate: int
-            Bitrate in Bits per second. Defaults to `None`
-        ffmpeg_params: list(str)
-            List of additional ffmpeg parameters
-        stems_as_channels: bool
-            stems will be saved as multiple channels
-            (if multichannel is supported).
-        stems_as_files: bool
-            stems will be saved as multiple files. Here, the basename(path),
-            is ignored and just the parent path + extension is used.
-        stem_names: list(str)
-            provide a name of each stem, if `data` is array_like
-            defaults to enumerated
-
+        writer: object that holds parameters for the actual writing method
+            Currently this can be one of the following:
+                `FilesWriter(...)` (default)
+                    Stems will be saved as multiple files.
+                    Here, basename(path), is ignored and just the
+                    parent path + extension is used.
+                `ChannelsWriter(...)`
+                    Stems will be saved as multiple channels
+                `StreamsWriter(...)`
+                    Stem will be saved into a single multistream audio
+                `NIStreamsWriter(...)`
+                    Stem will be saved into a single multistream audio.
+                    Additionally adds Native Instruments Stems compabible
+                    Metadata.
     Notes
     -----
 
     The procedure for writing stem files varies depending of the
-    specified output container format. There are two basic ways to write
-    stems:
+    specified output container format (aka. the `path` extension).
+    There are two basic ways to write stems:
 
     1.) the container supports multiple stems (`mp4/m4a`, `opus`, `mka`)
     2.) the container does not support multiple stems (`wav`, `mp3`, `flac`)
 
     For 1.) we provide two options:
 
-    1a.) stems will be saved as substreams when
-         `stems_as_channels=False` (default)
-    1b.) stems will be multiplexed into channels and saved as
+    1a.) `stempeg.StreamsWriter(..)`
+        stems will be saved as sub-streams.
+    1b.) `stempeg.ChannelsWriter()`
+        stems will be multiplexed into channels and saved as
         multichannel file.
         E.g. an `audio` tensor of `shape=(stems, samples, 2)`
         will be converted to a single-stem multichannel audio
-        `(samples, stems*2)`. This option is activated using
-        `stems_as_channels=True`
-    1c.) stems will be saved as multiple files when `stems_as_files` is
-         active
+        `(samples, stems*2)`.
+    1c.) stems will be saved as multiple files when `FilesWriter()` is
+         used.
 
     For 2.), when the container does not support multiple stems there
     are two options:
 
-    2a) `stems_as_channels` has to be set to `True` (See 1b) otherwise an
-        error will be raised. Note that this only works for `wav` and `flac`).
-        note that file ending of `path` determines the container (but not the codec!).
+    2a) Using `stempeg.ChannelsWriter` when the container supports multichannel
+        audio. E.g. works for `wav` and `flac`. Note that file ending of `path`
+        determines the container
+        (but not the codec!).
     2b) `stems_as_files` so that multiple files will be created when
         stems_as_files` is active.
 
     """
+    # check if ffmpeg installed
     if int(stempeg.ffmpeg_version()[0]) < 3:
         warnings.warning(
             "Writing stems with FFMPEG version < 3 is unsupported",
@@ -612,13 +712,13 @@ def write_stems(
         values = data.values()
         data = np.array(list(values))
         stem_names = list(keys)
-        if not isinstance(mapper, (ChannelsMapper)):
-            mapper.stem_names = stem_names
+        if not isinstance(writer, (ChannelsWriter)):
+            writer.stem_names = stem_names
 
     if data.ndim != 3:
         raise RuntimeError("Input tensor dimension should be 3d")
 
-    return mapper(
+    return writer(
         path=path,
         data=data,
         sample_rate=sample_rate

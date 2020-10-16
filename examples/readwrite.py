@@ -51,7 +51,7 @@ if __name__ == '__main__':
         "test.stem.m4a",
         stems,
         sample_rate=96000,
-        mapper=stempeg.write.StreamsMapper(
+        writer=stempeg.StreamsWriter(
             codec="aac",
             output_sample_rate=44100,
             bitrate="256000",
@@ -59,14 +59,27 @@ if __name__ == '__main__':
         )
     )
 
-    # TODO: add NIstems here
+    # Native Instruments compatible stems
+    stempeg.write_stems(
+        "test_traktor.stem.m4a",
+        stems,
+        sample_rate=96000,
+        writer=stempeg.NIStemsWriter(
+            stems_metadata=[
+                {"color": "#009E73", "name": "Drums"},
+                {"color": "#D55E00", "name": "Bass"},
+                {"color": "#CC79A7", "name": "Other"},
+                {"color": "#56B4E9", "name": "Vocals"}
+            ]
+        )
+    )
 
     # lets write as multistream opus (supports only 48000 khz)
     stempeg.write_stems(
         "test.stem.opus",
         stems,
         sample_rate=96000,
-        mapper=stempeg.write.StreamsMapper(
+        writer=stempeg.StreamsWriter(
             output_sample_rate=48000,
             codec="opus"
         )
@@ -77,7 +90,7 @@ if __name__ == '__main__':
         "test.wav",
         stems,
         sample_rate=96000,
-        mapper=stempeg.write.ChannelsMapper(
+        writer=stempeg.ChannelsWriter(
             output_sample_rate=48000
         )
     )
@@ -88,16 +101,18 @@ if __name__ == '__main__':
         stems_from_channels=2
     )
 
-    # # mp3 does not support multiple channels,
-    # # therefore we have to use `stems_as_files`
-    # # outputs are named ["output/0.mp3", "output/1.mp3"]
-    # # for named files, provide a dict or use `stem_names`
-    stempeg.write_stems(
-        "test.stem/*.mp3",
-        stems,
-        sample_rate=rate,
-        mapper=stempeg.write.FilesMapper(
-            output_sample_rate=48000,
-            stem_names=["mix", "drums", "bass", "other", "vocals"]
+    # mp3 does not support multiple channels,
+    # therefore we have to use `stems_as_files`
+    # outputs are named ["output/0.mp3", "output/1.mp3"]
+    # for named files, provide a dict or use `stem_names`
+    for i in range(10):
+        stempeg.write_stems(
+            "test_audio/.m4a",
+            stems,
+            sample_rate=rate,
+            writer=stempeg.FilesWriter(
+                multiprocess=True,
+                output_sample_rate=48000,
+                stem_names=["mix", "drums", "bass", "other", "vocals"]
+            )
         )
-    )

@@ -1,8 +1,11 @@
 from .read import read_stems
 from .read import Info
+
 from .write import write_stems
 from .write import write_audio
 from .write import check_available_aac_encoders
+from .write import FilesWriter, StreamsWriter, ChannelsWriter, NIStemsWriter
+
 
 import re
 import os
@@ -10,49 +13,8 @@ import subprocess as sp
 from os import path as op
 import argparse
 import pkg_resources
-import shutil
 
 __version__ = "0.2.0"
-
-
-# TODO: decide which check to use
-def _check_ffmpeg_install():
-    """ Ensure FFMPEG binaries are available.
-    :raise OSError: If ffmpeg or ffprobe is not found.
-    """
-    for binary in ('ffmpeg', 'ffprobe'):
-        if shutil.which(binary) is None:
-            raise OSError('{} binary not found'.format(binary))
-
-
-def _check_mp4box_install():
-    """ Ensure MP4box binary is available.
-    :raise OSError: If mp4box is not found.
-    """
-    for binary in ('mp4box'):
-        if shutil.which(binary) is None:
-            raise OSError('{} binary not found'.format(binary))
-
-
-def cmd_exist(cmd):
-    try:
-        from shutil import which
-        return shutil.which(cmd) is not None
-    except ImportError:
-        return any(
-            os.access(os.path.join(path, cmd), os.X_OK)
-            for path in os.environ["PATH"].split(os.pathsep)
-        )
-
-
-def ffmpeg_and_ffprobe_exists():
-    return cmd_exist("ffmpeg") and cmd_exist("ffprobe")
-
-
-if not ffmpeg_and_ffprobe_exists():
-    raise RuntimeError('ffmpeg or ffprobe could not be found! '
-                       'Please install them before using stempeg. '
-                       'See: https://github.com/faroit/stempeg')
 
 
 def example_stem_path():
