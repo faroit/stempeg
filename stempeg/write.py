@@ -1,97 +1,51 @@
 import base64
 import json
 import logging
-import re
-import subprocess as sp
 import tempfile as tmp
 import warnings
 from itertools import chain
-from pathlib import Path
 from multiprocessing import Pool
+from pathlib import Path
+import atexit
 
 import ffmpeg
-
-from .cmds import FFMPEG_PATH
-from .cmds import mp4box_exists
-
 import numpy as np
-from setuptools.command.egg_info import write_setup_requirements
 
 import stempeg
 
-
-def check_available_aac_encoders():
-    """Returns the available AAC encoders
-
-    Returns:
-        list(str): List of available encoder codecs from ffmpeg
-
-    """
-    cmd = [
-        FFMPEG_PATH,
-        '-v', 'error',
-        '-codecs'
-    ]
-
-    output = sp.check_output(cmd)
-    aac_codecs = [
-        x for x in
-        output.splitlines() if "AAC (Advanced Audio Coding)" in str(x)
-    ][0]
-    hay = aac_codecs.decode('ascii')
-    match = re.findall(r'\(encoders: ([^\)]*) \)', hay)
-    if match:
-        return match[0].split(" ")
-    else:
-        return None
+from .cmds import FFMPEG_PATH, mp4box_exists
 
 
-def get_aac_codec():
-    """Checks codec and warns if `libfdk_aac` codec
-     is not available.
+def build_channel_map(nb_stems, nb_channels, stem_names=None):
+    """Creates an ffmpeg complex filter string
 
-    Returns:
-        str: ffmpeg aac codec name
-    """
-    avail = check_available_aac_encoders()
-    if avail is not None:
-        if 'libfdk_aac' in avail:
-            codec = 'libfdk_aac'
-        else:
-            logging.warning(
-                "For the better audio quality, install `libfdk_aac` codec."
-            )
-            codec = 'aac'
-    else:
-        codec = 'aac'
-
-    return codec
-
-
-def build_channel_map(nb_stems, nb_channels, stem_names=[]):
-    """Create complex filter for multiplex multiple stems into
+    The filter is designed to multiplex multiple stems into
     multiple channels.
 
     In the case of single channel stems a filter is created that maps
         nb_channels = nb_stems
-
     In the case of stereo stems, the filter maps
         nb_channels = nb_stems * 2
 
     Args:
         nb_stems: int
-            Number of stems
+            Number of stems.
         nb_channels: int
-            Number of channels
+            Number of channels.
         stem_names: list(str)
-            List of stem names, should match number of stems
+            List of stem names, should match number of stems.
 
     Returns:
         complex_filter: str
     """
 
-    if nb_stems != len(stem_names):
-        raise RuntimeError("Please provide a list of stem names")
+    if stem_names is None:
+        stem_names = [
+            "Stem_" % str(i + 1) for i in range(nb_stems)
+        ]
+
+    if stem_names != len(stem_names):
+        raise RuntimeError("Please provide a stem names for each stream")
 
     if nb_channels == 1:
         return (
@@ -186,12 +140,23 @@ class Writer(object):
 class FilesWriter(Writer):
     r"""Save Stems as multiple files
 
-    Extension of `torchaudio.functional.complex_norm` with mono
-
     Args:
-        power (float): Power of the norm. (Default: `1.0`).
-        mono (bool): Downmix to single channel after applying power norm
-            to maximize
+        codec: str
+            Specifies ffmpeg codec being used. Defaults to `None` which
+            automatically selects default codec for each container
+        bitrate: int
+            Bitrate in Bits per second. Defaults to None
+        output_sample_rate: float, optional
+            Optionally, applies resampling, if different to `sample_rate`.
+            Defaults to `None` which `sample_rate`.
+        stem_names: List(str)
+            List of stem names to be used for writing. Defaults to `None` which
+            results in stem names to be enumerated: `['Stem_1', 'Stem_2', ...]`
+        multiprocess: bool
+            Enable multiprocessing when writing files.
+            Can speed up writing of large files
+        synchronous:
+            Wait before all stems have been saved.
     """
     def __init__(
         self,
@@ -207,7 +172,11 @@ class FilesWriter(Writer):
         self.output_sample_rate = output_sample_rate
         self.stem_names = stem_names
         self.synchronous = synchronous
-        self._pool = Pool() if multiprocess else None
+        if multiprocess:
+            self._pool = Pool()
+            atexit.register(self._pool.close)
+        else:
+            self._pool = None
         self._tasks = []
 
     def join(self, timeout=200):
@@ -230,9 +199,12 @@ class FilesWriter(Writer):
     ):
         """
         Args:
-            data (array): stems tensor of shape `(stems, samples, channel)`
-            path (str): path where stems should be written
-            sample_rate (float): audio sample rate
+            data: array_like
+                stems tensor of shape `(stems, samples, channel)`
+            path: str
+                path where stems should be written
+            sample_rate: float
+                audio sample rate
         """
         nb_stems = data.shape[0]
 
@@ -240,7 +212,7 @@ class FilesWriter(Writer):
             self.output_sample_rate = sample_rate
 
         if self.stem_names is None:
-            self.stem_names = ["Stem " + str(k) for k in range(nb_stems)]
+            self.stem_names = ["Stem_" + str(k) for k in range(nb_stems)]
 
         for idx in range(nb_stems):
             p = Path(path)
@@ -598,7 +570,6 @@ def write_audio(
             Bitrate in Bits per second. Defaults to None
     """
 
-    # TODO: check ffmpeg install
     # check if path is available and creat it
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
