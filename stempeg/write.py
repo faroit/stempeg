@@ -45,7 +45,7 @@ def build_channel_map(nb_stems, nb_channels, stem_names=None):
             "Stem_" % str(i + 1) for i in range(nb_stems)
         ]
 
-    if stem_names != len(stem_names):
+    if nb_stems != len(stem_names):
         raise RuntimeError("Please provide a stem names for each stream")
 
     if nb_channels == 1:
@@ -204,11 +204,13 @@ class FilesWriter(Writer):
         Args:
             data: array_like
                 stems tensor of shape `(stems, samples, channel)`
-            path: str
+            path: str or tuple(str, str)
                 path with extension of output folder. Note that the basename
                 of the path will be ignored. Wildcard can be used.
                     Example: `path=/stems/*.wav` writes
                              `/stems/Stem_1.wav`, `/stems/Stem_2.wav` ..
+                Alternatively a tuple can be used:
+                    Example: `path=("/stems", ".wav")`
             sample_rate: float
                 audio sample rate
         """
@@ -221,10 +223,15 @@ class FilesWriter(Writer):
             self.stem_names = ["Stem_" + str(k) for k in range(nb_stems)]
 
         for idx in range(nb_stems):
-            p = Path(path)
-            stem_filepath = str(Path(
-                p.parent, self.stem_names[idx] + p.suffix
-            ))
+            if type(path) is tuple:
+                stem_filepath = str(Path(
+                    path[0], self.stem_names[idx] + path[1]
+                ))
+            else:
+                p = Path(path)
+                stem_filepath = str(Path(
+                    p.parent, self.stem_names[idx] + p.suffix
+                ))
             if self._pool:
                 task = self._pool.apply_async(
                     write_audio,
@@ -520,13 +527,13 @@ class NIStemsWriter(Writer):
                 codec=self.codec,
                 bitrate=self.bitrate,
                 output_sample_rate=self.output_sample_rate,
-                stem_names=[d['name'] for d in self.stems_metadata]
+                stem_names=['Mix'] + [d['name'] for d in self.stems_metadata]
             )
         )
 
         # add metadata for NI compabtibility
-        if self.default_metadata is not None:
-            with open(stempeg.example_stem_path()) as f:
+        if self.default_metadata is None:
+            with open(stempeg.default_metadata()) as f:
                 metadata = json.load(f)
         else:
             metadata = self.default_metadata

@@ -3,9 +3,9 @@ from .read import Info
 
 from .write import write_stems
 from .write import write_audio
-from .write import check_available_aac_encoders
 from .write import FilesWriter, StreamsWriter, ChannelsWriter, NIStemsWriter
 
+from .cmds import check_available_aac_encoders
 
 import re
 import os

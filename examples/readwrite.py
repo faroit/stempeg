@@ -2,6 +2,7 @@
 """
 import argparse
 import stempeg
+import subprocess as sp
 import numpy as np
 from os import path as op
 
@@ -102,17 +103,16 @@ if __name__ == '__main__':
     )
 
     # mp3 does not support multiple channels,
-    # therefore we have to use `stems_as_files`
+    # therefore we have to use `stempeg.FilesWriter`
     # outputs are named ["output/0.mp3", "output/1.mp3"]
     # for named files, provide a dict or use `stem_names`
-    for i in range(10):
-        stempeg.write_stems(
-            "test_audio/.m4a",
-            stems,
-            sample_rate=rate,
-            writer=stempeg.FilesWriter(
-                multiprocess=True,
-                output_sample_rate=48000,
-                stem_names=["mix", "drums", "bass", "other", "vocals"]
-            )
+    stempeg.write_stems(
+        ("output", ".mp3"),
+        stems,
+        sample_rate=rate,
+        writer=stempeg.FilesWriter(
+            multiprocess=True,
+            output_sample_rate=48000,
+            stem_names=["mix", "drums", "bass", "other", "vocals"]
         )
+    )
