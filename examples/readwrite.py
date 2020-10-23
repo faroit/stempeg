@@ -39,7 +39,7 @@ if __name__ == '__main__':
     }
     # keys will be automatically used
 
-    # from dict as multi-stream mp4
+    # from dict as files
     stempeg.write_stems(
         "test.stem.m4a",
         data=stems,
