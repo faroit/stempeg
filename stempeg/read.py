@@ -25,7 +25,7 @@ def read_stems(
     dtype=np.float32,
     info=None,
     sample_rate=None,
-    stems_from_channels=False
+    from_channels=False
 ):
     """Read stems into numpy tensor
 
@@ -50,7 +50,7 @@ def read_stems(
         Pass ffmpeg `Info` object to reduce nunber of probes on file
     sample_rate : int
         Sample rate to load audio with. Defaults to `None`
-    stems_from_channels : bool
+    from_channels : bool
         stems will be extracted from multichannel-pairs
         e.g. 8 channels will be converted to 4 stereo pairs
         (defaults to `False`)
@@ -72,7 +72,7 @@ def read_stems(
     if 'streams' not in metadata.info or metadata.nb_audio_streams == 0:
         raise Warning('No stream was found with ffprobe')
 
-    if stems_from_channels:
+    if from_channels:
         if metadata.nb_audio_streams != 1:
             raise Warning(
                 'In this configuration, only a single substream is processed'
@@ -80,7 +80,7 @@ def read_stems(
         else:
             if metadata.audio_streams[0][
                 'channels'
-            ] % stems_from_channels != 0:
+            ] % from_channels != 0:
                 raise Warning('Stems should be encoded as multi-channel')
             else:
                 substreams = 0
@@ -126,13 +126,12 @@ def read_stems(
         warnings.warning("Stems differ in length and were shortend")
         min_length = np.min(stem_durations)
         stems = [t[:min_length, :] for t in stems]
-        # TODO: Also check number of channels are the same for all
 
     stems = np.array(stems)
-    if stems_from_channels and stems.shape[-1] > 1:
+    if from_channels and stems.shape[-1] > 1:
         stems = stems.transpose(1, 0, 2)
         stems = stems.reshape(
-            stems.shape[0], stems.shape[1], -1, stems_from_channels
+            stems.shape[0], stems.shape[1], -1, from_channels
         )
         stems = stems.transpose(2, 0, 3, 1)[..., 0]
 
