@@ -33,7 +33,7 @@ install:
 
 script:
     - python --version
-    - py.test
+    - py.test tests
 
 after_success:
     - pip uninstall -y stempeg
