@@ -49,7 +49,7 @@ setup(
         ],
     },
     entry_points={'console_scripts': [
-        'stem2files=stempeg:cli',
+        'stem2files=stempeg.cli:cli',
     ]},
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/faroit/stempeg/issues',
