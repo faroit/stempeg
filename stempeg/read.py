@@ -169,7 +169,7 @@ class Info(object):
     @property
     def title_streams(self):
         return [
-            stream['tags']['handler_name']
+            stream['tags'].get('handler_name')
             for stream in self.audio_streams
         ]
 
