@@ -27,9 +27,9 @@ class Reader(object):
 
 
 class StreamsReader(Reader):
-    """Base class for reader
+    """Holding configuration for streams
 
-    Holds reader options
+    This is the default reader. Nothing to be hold
     """
 
     def __init__(self):
