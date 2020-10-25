@@ -36,6 +36,16 @@ class StreamsReader(Reader):
         pass
 
 
+class FilesReader(Reader):
+    """Holding configuration for streams
+
+    This is the default reader. Nothing to be hold
+    """
+
+    def __init__(self):
+        pass
+
+
 class ChannelsReader(Reader):
     """Using multichannels to multiplex to stems
 
@@ -65,37 +75,37 @@ def read_stems(
 ):
     """Read stems into numpy tensor
 
-    Parameters
-    ----------
-    filename : str (required)
-        filename of the audio file to load data from.
-    start : float (optional)
-        Start offset to load from in seconds.
-    duration : float (optional)
-        Duration to load in seconds.
-    stem_id : int (optional)
-        subbstream id, defauls to `None` (all substreams are loaded)
-    always_3d : bool, optional
-        By default, reading a single-stream audio file will return a
-        two-dimensional array.  With ``always_3d=True``, audio data is
-        always returned as a three-dimensional array, even if the audio
-        file has only one stream.
-    dtype : (Optional)
-        Numpy data type to use, default to `np.float32`.
-    info : Info (Optional)
-        Pass ffmpeg `Info` object to reduce nunber of probes on file
-    sample_rate : int
-        Sample rate to load audio with. Defaults to `None`
-    reader: object that holds parameters for the actual reading method
-        Currently this can be one of the following:
-            `StreamsReader(...)`
-                Stems will be read from a single multistream audio, (default)
-            `ChannelsReader(...)`
-                Stems will be read/demultiplexed from multiple channels
-
+    Args:
+        filename: str (required)
+            filename of the audio file to load data from.
+        start: float (optional)
+            Start offset to load from in seconds.
+        duration: float (optional)
+            Duration to load in seconds.
+        stem_id: int (optional)
+            subbstream id, defauls to `None` (all substreams are loaded)
+        always_3d: bool, optional
+            By default, reading a single-stream audio file will return a
+            two-dimensional array.  With ``always_3d=True``, audio data is
+            always returned as a three-dimensional array, even if the audio
+            file has only one stream.
+        dtype: (Optional)
+            Numpy data type to use, default to `np.float32`.
+        info: Info (Optional)
+            Pass ffmpeg `Info` object to reduce number of os calls on file.
+        sample_rate: int
+            Sample rate to load audio with. Defaults to `None`
+        reader: object that holds parameters for the actual reading method
+            Currently this can be one of the following:
+                `StreamsReader(...)`
+                    Read from a single multistream audio (default)
+                `ChannelsReader(...)`
+                    Read/demultiplexed from multiple channels
     """
     if not isinstance(filename, str):
         filename = filename.decode()
+
+    # use ffprobe to get info object (samplerate, lengths)
     try:
         if info is None:
             metadata = Info(filename)
@@ -103,24 +113,26 @@ def read_stems(
             metadata = info
 
         ffmpeg.probe(filename)
-
     except ffmpeg._run.Error as e:
         raise Warning(
             'An error occurs with ffprobe (see ffprobe output below)\n\n{}'
             .format(e.stderr.decode()))
-    if 'streams' not in metadata.info or metadata.nb_audio_streams == 0:
-        raise Warning('No stream was found with ffprobe')
 
+    # check number of audio streams in file
+    if 'streams' not in metadata.info or metadata.nb_audio_streams == 0:
+        raise Warning('No audio stream found.')
+
+    # using ChannelReader would ignore substreams
     if isinstance(reader, (ChannelsReader)):
         if metadata.nb_audio_streams != 1:
             raise Warning(
-                'In this configuration, only a single substream is processed'
+                'stempeg.ChannelsReader() only processes the first substream.'
             )
         else:
             if metadata.audio_streams[0][
                 'channels'
             ] % reader.nb_channels != 0:
-                raise Warning('Stems should be encoded as multi-channel')
+                raise Warning('Stems should be encoded as multi-channel.')
             else:
                 substreams = 0
     else:
@@ -193,46 +205,57 @@ class Info(object):
 
     @property
     def nb_audio_streams(self):
+        """Returns the number of audio substreams"""
         return len(self.audio_streams)
 
     @property
     def nb_samples_streams(self):
+        """Returns a list of number of samples for each substream"""
         return [self.samples(k) for k, stream in enumerate(self.audio_streams)]
 
     @property
     def duration_streams(self):
+        """Returns a list of durations (in s) for all substreams"""
         return [
             self.duration(k) for k, stream in enumerate(self.audio_streams)
         ]
 
     @property
     def title_streams(self):
+        """Returns stream titles for all substreams"""
         return [
             stream['tags'].get('handler_name')
             for stream in self.audio_streams
         ]
 
     def audio_stream_idx(self):
+        """Returns audio substream indices"""
         return [s['index'] for s in self.audio_streams]
 
     def samples(self, idx):
+        """Returns the number of samples for a stream index"""
         return int(self.audio_streams[idx]['duration_ts'])
 
     def duration(self, idx):
+        """Returns the duration (in seconds) for a stream index"""
         return float(self.audio_streams[idx]['duration'])
 
     def title(self, idx):
+        """Return the `handler_name` metadata for a given stream index"""
         return self.audio_streams[idx]['tags']['handler_name']
 
     def rate(self, idx):
-        # deprecated
+        # deprecated from older stempeg version
         return self.sample_rate(idx)
 
     def sample_rate(self, idx):
+        """Return sample rate for a given substream"""
         return int(self.audio_streams[idx]['sample_rate'])
 
     def channels(self, idx):
+        """Returns the number of channels for a gvien substream"""
         return int(self.audio_streams[idx]['channels'])
 
     def __repr__(self):
+        """Print stream information"""
         return pprint.pformat(self.audio_streams)
