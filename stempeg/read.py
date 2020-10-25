@@ -246,7 +246,6 @@ class Info(object):
 
     def __init__(self, filename):
         super(Info, self).__init__()
-        self.filename = filename
         self.info = ffmpeg.probe(filename)
         self.audio_streams = [
             stream for stream in self.info['streams']
