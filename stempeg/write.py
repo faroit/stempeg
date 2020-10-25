@@ -157,7 +157,7 @@ class FilesWriter(Writer):
             results in stem names to be enumerated: `['Stem_1', 'Stem_2', ...]`
         multiprocess: bool
             Enable multiprocessing when writing files.
-            Can speed up writing of large files. Defaults to `True`.
+            Can speed up writing of large files. Defaults to `False`.
         synchronous bool:
             Write multiprocessed synchronous. Defaults to `True`.
     """
@@ -167,7 +167,7 @@ class FilesWriter(Writer):
         bitrate=None,
         output_sample_rate=44100,
         stem_names=None,
-        multiprocess=True,
+        multiprocess=False,
         synchronous=True
     ):
         self.codec = codec

@@ -65,8 +65,6 @@ def _read_ffmpeg(
     dtype,
     stem_idx
 ):
-    if sample_rate is None:
-        sample_rate = metadata.sample_rate(stem_idx)
     channels = metadata.channels(stem_idx)
     output_kwargs = {'format': 'f32le', 'ar': sample_rate}
     if duration is not None:
@@ -97,30 +95,31 @@ def read_stems(
     info=None,
     sample_rate=None,
     reader=StreamsReader(),
-    multiprocess=True
+    multiprocess=False
 ):
     """Read stems into numpy tensor
 
     Args:
-        filename: str (required)
+        filename: str, required
             filename of the audio file to load data from.
-        start: float (optional)
+        start: float, optional
             Start offset to load from in seconds.
-        duration: float (optional)
+        duration: float, optional
             Duration to load in seconds.
-        stem_id: int (optional)
+        stem_id: int, optional
             subbstream id, defauls to `None` (all substreams are loaded)
         always_3d: bool, optional
             By default, reading a single-stream audio file will return a
             two-dimensional array.  With ``always_3d=True``, audio data is
             always returned as a three-dimensional array, even if the audio
             file has only one stream.
-        dtype: (Optional)
+        dtype: np.dtype, optional
             Numpy data type to use, default to `np.float32`.
-        info: Info (Optional)
+        info: Info, Optional
             Pass ffmpeg `Info` object to reduce number of os calls on file.
-        sample_rate: int
-            Sample rate to load audio with. Defaults to `None`
+        sample_rate: float, optional
+            Sample rate of returned audio. Defaults to `None` which results in
+            the sample rate returned from the mixture.
         reader: Reader
             Holds parameters for the actual reading method
             Currently this can be one of the following:
@@ -130,7 +129,7 @@ def read_stems(
                     Read/demultiplexed from multiple channels
         multiprocess: bool
             Applys multiprocessing for reading substreams.
-            Defaults to `True`
+            Defaults to `False`
     """
     if multiprocess:
         _pool = Pool()
@@ -180,6 +179,10 @@ def read_stems(
     if not isinstance(substreams, list):
         substreams = [substreams]
 
+    # if not, get sample rate from mixture
+    if sample_rate is None:
+        sample_rate = metadata.sample_rate(0)
+
     stems = []
     # apply fix for very small start values of `-ss <0.000001`
     # these will be rounded of to 0
@@ -202,6 +205,7 @@ def read_stems(
             callback=stems.extend
         )
         results.wait()
+        _pool.terminate()
     else:
         stems = [
             _read_ffmpeg(

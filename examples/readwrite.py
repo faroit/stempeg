@@ -1,7 +1,6 @@
 """Opens a stem file and saves (re-encodes) back to a stem file
 """
 import argparse
-from tests.test_write import nb_channels
 import stempeg
 import subprocess as sp
 import numpy as np
