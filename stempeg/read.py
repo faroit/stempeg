@@ -16,6 +16,42 @@ def _to_ffmpeg_time(n):
     return '%d:%02d:%09.6f' % (h, m, s)
 
 
+class Reader(object):
+    """Base class for reader
+
+    Holds reader options
+    """
+
+    def __init__(self):
+        pass
+
+
+class StreamsReader(Reader):
+    """Base class for reader
+
+    Holds reader options
+    """
+
+    def __init__(self):
+        pass
+
+
+class ChannelsReader(Reader):
+    """Using multichannels to multiplex to stems
+
+    stems will be extracted from multichannel-pairs
+    e.g. 8 channels will be converted to 4 stereo pairs
+
+
+    Args:
+        from_channels: int
+            number of channels, defaults to `2`.
+    """
+
+    def __init__(self, nb_channels=2):
+        self.nb_channels = nb_channels
+
+
 def read_stems(
     filename,
     start=None,
@@ -25,7 +61,7 @@ def read_stems(
     dtype=np.float32,
     info=None,
     sample_rate=None,
-    from_channels=False
+    reader=StreamsReader()
 ):
     """Read stems into numpy tensor
 
@@ -50,10 +86,13 @@ def read_stems(
         Pass ffmpeg `Info` object to reduce nunber of probes on file
     sample_rate : int
         Sample rate to load audio with. Defaults to `None`
-    from_channels : bool
-        stems will be extracted from multichannel-pairs
-        e.g. 8 channels will be converted to 4 stereo pairs
-        (defaults to `False`)
+    reader: object that holds parameters for the actual reading method
+        Currently this can be one of the following:
+            `StreamsReader(...)`
+                Stems will be read from a single multistream audio, (default)
+            `ChannelsReader(...)`
+                Stems will be read/demultiplexed from multiple channels
+
     """
     if not isinstance(filename, str):
         filename = filename.decode()
@@ -72,7 +111,7 @@ def read_stems(
     if 'streams' not in metadata.info or metadata.nb_audio_streams == 0:
         raise Warning('No stream was found with ffprobe')
 
-    if from_channels:
+    if isinstance(reader, (ChannelsReader)):
         if metadata.nb_audio_streams != 1:
             raise Warning(
                 'In this configuration, only a single substream is processed'
@@ -80,7 +119,7 @@ def read_stems(
         else:
             if metadata.audio_streams[0][
                 'channels'
-            ] % from_channels != 0:
+            ] % reader.nb_channels != 0:
                 raise Warning('Stems should be encoded as multi-channel')
             else:
                 substreams = 0
@@ -128,10 +167,10 @@ def read_stems(
         stems = [t[:min_length, :] for t in stems]
 
     stems = np.array(stems)
-    if from_channels and stems.shape[-1] > 1:
+    if isinstance(reader, (ChannelsReader)) and stems.shape[-1] > 1:
         stems = stems.transpose(1, 0, 2)
         stems = stems.reshape(
-            stems.shape[0], stems.shape[1], -1, from_channels
+            stems.shape[0], stems.shape[1], -1, reader.nb_channels
         )
         stems = stems.transpose(2, 0, 3, 1)[..., 0]
 

@@ -1,3 +1,4 @@
+from stempeg.write import ChannelsWriter
 import stempeg
 import numpy as np
 import pytest
@@ -5,7 +6,7 @@ import tempfile as tmp
 import subprocess as sp
 
 
-@pytest.fixture(params=[1, 2, 4])
+@pytest.fixture(params=[1, 4])
 def nb_stems(request):
     return request.param
 
@@ -51,7 +52,10 @@ def test_multistream_containers(audio, multistream_format, nb_stems):
                 tempfile.name,
                 audio,
                 sample_rate=44100,
-                writer=stempeg.StreamsWriter(codec='aac', stem_names=stem_names)
+                writer=stempeg.StreamsWriter(
+                    codec='aac',
+                    stem_names=stem_names
+                )
             )
             loaded_audio, rate = stempeg.read_stems(
                 tempfile.name,
@@ -67,37 +71,38 @@ def test_multistream_containers(audio, multistream_format, nb_stems):
                 )
 
 
-# def test_multichannel_containers(audio, nb_channels, multichannel_format):
-#     with tmp.NamedTemporaryFile(
-#         delete=False,
-#         suffix='.' + multichannel_format
-#     ) as tempfile:
-#         stempeg.write_stems(
-#             tempfile.name,
-#             audio,
-#             sample_rate=44100,
-#             stems_as_channels=nb_channels
-#         )
-#         loaded_audio, rate = stempeg.read_stems(
-#             tempfile.name,
-#             always_3d=True,
-#             stems_from_channels=nb_channels
-#         )
-#         assert audio.shape == loaded_audio.shape
+def test_multichannel_containers(audio, nb_channels, multichannel_format):
+    with tmp.NamedTemporaryFile(
+        delete=False,
+        suffix='.' + multichannel_format
+    ) as tempfile:
+        stempeg.write_stems(
+            tempfile.name,
+            audio,
+            sample_rate=44100,
+            writer=ChannelsWriter()
+        )
+        loaded_audio, rate = stempeg.read_stems(
+            tempfile.name,
+            always_3d=True,
+            reader=stempeg.ChannelsReader(nb_channels=nb_channels)
+        )
+        assert audio.shape == loaded_audio.shape
 
 
-# def test_multifileformats(audio, multifile_format):
-#     with tmp.NamedTemporaryFile(
-#         delete=False,
-#         suffix='.' + multifile_format
-#     ) as tempfile:
-#         stempeg.write_stems(
-#             tempfile.name,
-#             audio,
-#             sample_rate=44100,
-#             stems_as_files=True
-#         )
-#         # TODO: implement multiple reads
+def test_multifileformats(audio, multifile_format, nb_stems):
+    with tmp.NamedTemporaryFile(
+        delete=False,
+        suffix='.' + multifile_format
+    ) as tempfile:
+        stem_names = [str(k) for k in range(nb_stems)]
+        stempeg.write_stems(
+            tempfile.name,
+            audio,
+            sample_rate=44100,
+            writer=stempeg.FilesWriter(stem_names=stem_names)
+        )
+
 
 
 def test_channels(audio, multichannel_format):
@@ -127,12 +132,18 @@ def test_stereo(audio, multifile_format):
             assert audio.shape == loaded_audio.shape
 
 
-# def test_ffmpeg_errors(audio):
-#     if audio.ndim == 3:
-#         # write multistream as wav
-#         with pytest.raises(RuntimeError):
-#             with tmp.NamedTemporaryFile(
-#                 delete=False,
-#                 suffix='.wav'
-#             ) as tempfile:
-#                 stempeg.write_audio(tempfile.name, audio, sample_rate=44100)
+# write multistream as wav, which doesn't support it
+@pytest.mark.xfail
+def test_ffmpeg_errors(audio):
+    if audio.ndim == 3:
+        with pytest.raises(RuntimeError):
+            with tmp.NamedTemporaryFile(
+                delete=False,
+                suffix='.wav'
+            ) as tempfile:
+                stempeg.write_stems(
+                    tempfile.name,
+                    audio,
+                    sample_rate=44100,
+                    writer=stempeg.StreamsWriter()
+                )

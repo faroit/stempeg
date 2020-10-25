@@ -1,6 +1,6 @@
 from .read import read_stems
 from .read import Info
-
+from .read import StreamsReader, ChannelsReader
 from .write import write_stems
 from .write import write_audio
 from .write import FilesWriter, StreamsWriter, ChannelsWriter, NIStemsWriter

@@ -1,6 +1,7 @@
 """Opens a stem file and saves (re-encodes) back to a stem file
 """
 import argparse
+from tests.test_write import nb_channels
 import stempeg
 import subprocess as sp
 import numpy as np
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     # # stempeg also supports to load merged-multichannel streams using
     stems, rate = stempeg.read_stems(
         "test.wav",
-        stems_from_channels=2
+        reader=stempeg.ChannelsReader(nb_channels=2)
     )
 
     # mp3 does not support multiple channels,

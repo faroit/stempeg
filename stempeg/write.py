@@ -640,7 +640,7 @@ def write_stems(
     path,
     data,
     sample_rate=44100,
-    writer=FilesWriter(stem_names=None)
+    writer=StreamsWriter(stem_names=None)
 ):
     """Write stems from numpy Tensor
 
@@ -658,14 +658,14 @@ def write_stems(
             Output samplerate. Defaults to 44100 Hz.
         writer: object that holds parameters for the actual writing method
             Currently this can be one of the following:
-                `FilesWriter(...)` (default)
+                `FilesWriter(...)`
                     Stems will be saved as multiple files.
                     Here, basename(path), is ignored and just the
                     parent path + extension is used.
                 `ChannelsWriter(...)`
                     Stems will be saved as multiple channels
                 `StreamsWriter(...)`
-                    Stem will be saved into a single multistream audio
+                    Stem will be saved into a single multistream audio, **(default)**
                 `NIStreamsWriter(...)`
                     Stem will be saved into a single multistream audio.
                     Additionally adds Native Instruments Stems compabible

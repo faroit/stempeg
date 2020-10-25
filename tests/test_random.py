@@ -10,9 +10,9 @@ def nb_samples(request):
 
 def test_shape(nb_samples):
     R = np.random.random((5, nb_samples, 2))
-    stempeg.write_stems("./random.stem.mp4", R)
+    stempeg.write_stems("./random.stem.m4a", R, writer=stempeg.StreamsWriter())
     S, rate = stempeg.read_stems(
-        "./random.stem.mp4"
+        "./random.stem.m4a"
     )
 
     assert S.shape[0] == R.shape[0]
