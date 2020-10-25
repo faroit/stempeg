@@ -17,8 +17,14 @@ if __name__ == '__main__':
     # load stems
     stems, rate = stempeg.read_stems(args.input)
 
-    # load stems, resampled to 96000 Hz
-    stems, rate = stempeg.read_stems(args.input, sample_rate=96000)
+    # load stems,
+    # resample to 96000 Hz,
+    # use multiprocessing
+    stems, rate = stempeg.read_stems(
+        args.input,
+        sample_rate=96000,
+        multiprocess=True
+    )
 
     # --> stems now has `shape=(stem x samples x channels)``
 
@@ -106,6 +112,7 @@ if __name__ == '__main__':
     # therefore we have to use `stempeg.FilesWriter`
     # outputs are named ["output/0.mp3", "output/1.mp3"]
     # for named files, provide a dict or use `stem_names`
+    # also apply multiprocessing
     stempeg.write_stems(
         ("output", ".mp3"),
         stems,
