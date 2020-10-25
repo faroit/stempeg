@@ -1,7 +1,11 @@
+from stempeg.write import FilesWriter
 import numpy as np
 import warnings
 import ffmpeg
 import pprint
+from multiprocessing import Pool
+import atexit
+from functools import partial
 
 
 def _to_ffmpeg_time(n):
@@ -36,16 +40,6 @@ class StreamsReader(Reader):
         pass
 
 
-class FilesReader(Reader):
-    """Holding configuration for streams
-
-    This is the default reader. Nothing to be hold
-    """
-
-    def __init__(self):
-        pass
-
-
 class ChannelsReader(Reader):
     """Using multichannels to multiplex to stems
 
@@ -62,6 +56,37 @@ class ChannelsReader(Reader):
         self.nb_channels = nb_channels
 
 
+def _read_ffmpeg(
+    filename,
+    sample_rate,
+    metadata,
+    start,
+    duration,
+    dtype,
+    stem_idx
+):
+    if sample_rate is None:
+        sample_rate = metadata.sample_rate(stem_idx)
+    channels = metadata.channels(stem_idx)
+    output_kwargs = {'format': 'f32le', 'ar': sample_rate}
+    if duration is not None:
+        output_kwargs['t'] = _to_ffmpeg_time(duration)
+    if start is not None:
+        output_kwargs['ss'] = _to_ffmpeg_time(start)
+
+    output_kwargs['map'] = '0:' + str(stem_idx)
+    process = (
+        ffmpeg
+        .input(filename)
+        .output('pipe:', **output_kwargs)
+        .run_async(pipe_stdout=True, pipe_stderr=True))
+    buffer, _ = process.communicate()
+    waveform = np.frombuffer(buffer, dtype='<f4').reshape(-1, channels)
+    if not waveform.dtype == np.dtype(dtype):
+        waveform = waveform.astype(dtype)
+    return waveform
+
+
 def read_stems(
     filename,
     start=None,
@@ -71,7 +96,8 @@ def read_stems(
     dtype=np.float32,
     info=None,
     sample_rate=None,
-    reader=StreamsReader()
+    reader=StreamsReader(),
+    multiprocess=True
 ):
     """Read stems into numpy tensor
 
@@ -95,13 +121,23 @@ def read_stems(
             Pass ffmpeg `Info` object to reduce number of os calls on file.
         sample_rate: int
             Sample rate to load audio with. Defaults to `None`
-        reader: object that holds parameters for the actual reading method
+        reader: Reader
+            Holds parameters for the actual reading method
             Currently this can be one of the following:
                 `StreamsReader(...)`
                     Read from a single multistream audio (default)
                 `ChannelsReader(...)`
                     Read/demultiplexed from multiple channels
+        multiprocess: bool
+            Applys multiprocessing for reading substreams.
+            Defaults to `True`
     """
+    if multiprocess:
+        _pool = Pool()
+        atexit.register(_pool.close)
+    else:
+        _pool = None
+
     if not isinstance(filename, str):
         filename = filename.decode()
 
@@ -123,7 +159,7 @@ def read_stems(
         raise Warning('No audio stream found.')
 
     # using ChannelReader would ignore substreams
-    if isinstance(reader, (ChannelsReader)):
+    if isinstance(reader, ChannelsReader):
         if metadata.nb_audio_streams != 1:
             raise Warning(
                 'stempeg.ChannelsReader() only processes the first substream.'
@@ -146,39 +182,49 @@ def read_stems(
 
     stems = []
     # apply fix for very small start values of `-ss <0.000001`
+    # these will be rounded of to 0
     if start:
         if start < 1e-4:
             start = None
 
-    for stem in substreams:
-        if sample_rate is None:
-            sample_rate = metadata.sample_rate(stem)
-        channels = metadata.channels(stem)
-        output_kwargs = {'format': 'f32le', 'ar': sample_rate}
-        if duration is not None:
-            output_kwargs['t'] = _to_ffmpeg_time(duration)
-        if start is not None:
-            output_kwargs['ss'] = _to_ffmpeg_time(start)
-
-        output_kwargs['map'] = '0:' + str(stem)
-        process = (
-            ffmpeg
-            .input(filename)
-            .output('pipe:', **output_kwargs)
-            .run_async(pipe_stdout=True, pipe_stderr=True))
-        buffer, _ = process.communicate()
-        waveform = np.frombuffer(buffer, dtype='<f4').reshape(-1, channels)
-        if not waveform.dtype == np.dtype(dtype):
-            waveform = waveform.astype(dtype)
-        stems.append(waveform)
-
+    if _pool:
+        results = _pool.map_async(
+            partial(
+                _read_ffmpeg,
+                filename,
+                sample_rate,
+                metadata,
+                start,
+                duration,
+                dtype
+            ),
+            substreams,
+            callback=stems.extend
+        )
+        results.wait()
+    else:
+        stems = [
+            _read_ffmpeg(
+                filename,
+                sample_rate,
+                metadata,
+                start,
+                duration,
+                dtype,
+                stem_idx
+            )
+            for stem_idx in substreams
+        ]
     stem_durations = np.array([t.shape[0] for t in stems])
     if not (stem_durations == stem_durations[0]).all():
         warnings.warning("Stems differ in length and were shortend")
         min_length = np.min(stem_durations)
         stems = [t[:min_length, :] for t in stems]
 
+    # aggregate list of stems to numpy tensor
     stems = np.array(stems)
+
+    # If ChannelsReader is used, demultiplex from channels
     if isinstance(reader, (ChannelsReader)) and stems.shape[-1] > 1:
         stems = stems.transpose(1, 0, 2)
         stems = stems.reshape(

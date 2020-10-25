@@ -243,7 +243,7 @@ class FilesWriter(Writer):
                         self.codec,
                         self.bitrate
                     )
-                    )
+                )
                 self._tasks.append(task)
             else:
                 write_audio(
