@@ -10,11 +10,12 @@ import subprocess as sp
 import atexit
 
 import ffmpeg
+import ipdb
 import numpy as np
 
 import stempeg
 
-from .cmds import FFMPEG_PATH, MP4BOX_PATH, mp4box_exists, get_aac_codec
+from .cmds import FFMPEG_PATH, mp4box_exists, get_aac_codec, find_cmd
 
 
 def build_channel_map(nb_stems, nb_channels, stem_names=None):
@@ -476,13 +477,13 @@ class NIStemsWriter(Writer):
         bitrate=256000,
         output_sample_rate=44100
     ):
-
         if not mp4box_exists():
             raise RuntimeError(
                 'mp4box could not be found! '
                 'Please install them before using NIStemsWriter().'
                 'See: https://github.com/faroit/stempeg'
             )
+        self.mp4boxcli = find_cmd("mp4box")
         self.bitrate = bitrate
         self.default_metadata = default_metadata
         self.stems_metadata = stems_metadata
@@ -561,7 +562,7 @@ class NIStemsWriter(Writer):
                         "color": "#000000"
                     } for i in range(4)
                 ]
-            callArgs = [MP4BOX_PATH]
+            callArgs = [self.mp4boxcli]
             callArgs.extend(["-add", str(Path(tempdir, '0.m4a#ID=Z')), path])
             for s in range(1, data.shape[0]):
                 callArgs.extend(
