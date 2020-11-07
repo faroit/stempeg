@@ -130,6 +130,12 @@ def read_stems(
         multiprocess: bool
             Applys multiprocessing for reading substreams.
             Defaults to `False`
+
+    Returns:
+        stems: array_like
+            stems tensor of `shape=(stem x samples x channels)`
+        rate: float
+            sample rate
     """
     if multiprocess:
         _pool = Pool()
