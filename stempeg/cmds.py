@@ -2,6 +2,8 @@ import re
 import subprocess as sp
 import logging
 
+import ipdb
+
 
 FFMPEG_PATH = None
 FFPROBE_PATH = None
@@ -36,6 +38,7 @@ def mp4box_exists():
     global MP4BOX_PATH
     if MP4BOX_PATH is None:
         MP4BOX_PATH = find_cmd("mp4box")
+
     return MP4BOX_PATH is not None
 
 

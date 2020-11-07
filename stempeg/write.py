@@ -14,7 +14,7 @@ import numpy as np
 
 import stempeg
 
-from .cmds import FFMPEG_PATH, mp4box_exists, get_aac_codec
+from .cmds import FFMPEG_PATH, MP4BOX_PATH, mp4box_exists, get_aac_codec
 
 
 def build_channel_map(nb_stems, nb_channels, stem_names=None):
@@ -487,6 +487,7 @@ class NIStemsWriter(Writer):
         self.default_metadata = default_metadata
         self.stems_metadata = stems_metadata
         self.output_sample_rate = output_sample_rate
+        self._suffix = '.m4a'  # internal suffix for temporarly file
         if codec == 'aac':
             self.codec = get_aac_codec()
         else:
@@ -513,66 +514,79 @@ class NIStemsWriter(Writer):
         if data.shape[2] % 2 != 0:
             raise RuntimeError("Only stereo stems are supported")
 
+        if data.shape[0] != 5:
+            raise RuntimeError(
+                "NI Stems requires 5 streams, where stream 0 is the mixture."
+            )
+
         if data.shape[1] % 1024 != 0:
             logging.warning(
                 "Number of samples does not divide by 1024, be aware that "
                 "the AAC encoder add silence to the input signal"
             )
 
-        write_stems(
-            path,
-            data,
-            sample_rate=sample_rate,
-            writer=StreamsWriter(
-                codec=self.codec,
-                bitrate=self.bitrate,
-                output_sample_rate=self.output_sample_rate,
-                stem_names=['Mix'] + [d['name'] for d in self.stems_metadata]
+        # write m4a files to temporary folder
+        with tmp.TemporaryDirectory() as tempdir:
+            write_stems(
+                Path(tempdir, 'tmp' + self._suffix),
+                data,
+                sample_rate=sample_rate,
+                writer=FilesWriter(
+                    codec=self.codec,
+                    bitrate=self.bitrate,
+                    output_sample_rate=self.output_sample_rate,
+                    stem_names=[str(k) for k in range(data.shape[0])]
+                )
             )
-        )
+            # add metadata for NI compabtibility
+            if self.default_metadata is None:
+                with open(stempeg.default_metadata()) as f:
+                    metadata = json.load(f)
+            else:
+                metadata = self.default_metadata
 
-        # add metadata for NI compabtibility
-        if self.default_metadata is None:
-            with open(stempeg.default_metadata()) as f:
-                metadata = json.load(f)
-        else:
-            metadata = self.default_metadata
-
-        # replace stems metadata from dict
-        if self.stems_metadata is not None:
-            metadata['stems'] = self.stems_metadata
-        else:
-            nb_stems_metadata = len(metadata["stems"])
-            nb_stems = data.shape[0]
-
-            # enumerate tracks and use default colors
-            if nb_stems != nb_stems_metadata:
-                print("missing stem metadata, using defaults")
+            # replace stems metadata from dict
+            if self.stems_metadata is not None:
+                metadata['stems'] = self.stems_metadata
+            else:
+                # enumerate tracks and use default colors
+                print("Missing stem metadata, using defaults.")
                 metadata['stems'] = [
                     {
                         "name": "".join(
                             [
-                                "Stem_", str(i + nb_stems_metadata)
+                                "Stem_", str(i + 1)
                             ]
                         ),
                         "color": "#000000"
-                    } for i in range(nb_stems)
+                    } for i in range(4)
                 ]
-
-        cmd = (
-            [
-                'mp4box',
-                path,
-                "-udta",
-                "0:type=stem:src=base64," + str(
-                    base64.b64encode(json.dumps(metadata).encode())
+            callArgs = [MP4BOX_PATH]
+            callArgs.extend(["-add", str(Path(tempdir, '0.m4a#ID=Z')), path])
+            for s in range(1, data.shape[0]):
+                callArgs.extend(
+                    [
+                        "-add",
+                        str(Path(
+                            tempdir,
+                            str(s) + self._suffix + "#ID=Z:disable"
+                        ))
+                    ]
                 )
-            ]
-        )
-        try:
-            sp.check_call(cmd)
-        except sp.CalledProcessError as err:
-            raise RuntimeError(err) from None
+            callArgs.extend(
+                [
+                    '-brand', 'M4A:0', '-rb', 'isom', '-rb', 'iso2',
+                    "-udta",
+                    "0:type=stem:src=base64," + base64.b64encode(
+                        json.dumps(metadata).encode()
+                    ).decode(),
+                    "-quiet"
+                ]
+            )
+            try:
+                sp.check_call(callArgs)
+            except sp.CalledProcessError as err:
+                raise RuntimeError(err) from None
 
 
 def write_audio(
