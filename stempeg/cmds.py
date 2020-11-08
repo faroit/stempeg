@@ -34,7 +34,7 @@ def ffmpeg_and_ffprobe_exists():
 def mp4box_exists():
     global MP4BOX_PATH
     if MP4BOX_PATH is None:
-        MP4BOX_PATH = find_cmd("mp4box")
+        MP4BOX_PATH = find_cmd("MP4Box")
 
     return MP4BOX_PATH is not None
 

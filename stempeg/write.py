@@ -490,11 +490,11 @@ class NIStemsWriter(Writer):
     ):
         if not mp4box_exists():
             raise RuntimeError(
-                'mp4box could not be found! '
+                'MP4Box could not be found! '
                 'Please install them before using NIStemsWriter().'
                 'See: https://github.com/faroit/stempeg'
             )
-        self.mp4boxcli = find_cmd("mp4box")
+        self.mp4boxcli = find_cmd("MP4Box")
         self.bitrate = bitrate
         self.default_metadata = default_metadata
         self.stems_metadata = stems_metadata
