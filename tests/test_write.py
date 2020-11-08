@@ -160,7 +160,7 @@ def ordered(obj):
 
 
 def test_nistems():
-    mp4exc = stempeg.cmds.find_cmd("mp4box")
+    mp4exc = stempeg.cmds.find_cmd("MP4Box")
 
     stems, rate = stempeg.read_stems(stempeg.example_stem_path())
     with tmp.NamedTemporaryFile(
