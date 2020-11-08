@@ -452,14 +452,26 @@ class NIStemsWriter(Writer):
     Stems format. This writer should be used when users want to play back stems
     eg. using Traktor DJ.
 
+    By definition, this format only supports _five_ audio streams where
+    stream index 0 is the mixture.
+
+    This writer creates intermediate temporary files, which can result in slow
+    writing. Therefore, `StemsWriter` should be used in all cases where Traktor
+    compatibility is not necessary.
+
     Process is originally created by Native Instrument as shown here:
     https://github.com/axeldelafosse/stemgen/blob/909d9422af0738457303962262f99072a808d0c1/ni-stem/_internal.py#L38
 
     Args:
         default_metadata: Dict
-            Default metadatato be injected into the mp4 substream
+            Metadata to be injected into the mp4 substream.
+            Defaults to `stempeg.default_metadata()`.
         stems_metadata: List
-            Set track names and colors
+            Set dictory of track names and colors
+                `[{'name': str, 'color': str (hex)}, ...]`
+            Defaults to `stempeg.default_metadata()['stems']`, which
+            sets stem names to the following order:
+                `['mixture', 'drums', 'bass', 'other', 'vocals']`
         codec: str
             Specifies ffmpeg codec being used. Defaults to `aac` and,
             for best quality, will try to use `libfdk_aac` if availability.
@@ -503,7 +515,7 @@ class NIStemsWriter(Writer):
         """
         Args:
             data: array
-                stems tensor of shape `(stems, samples, channel)`
+                stems tensor of shape `(5, samples, channel)`
             path: str
                 path with extension
             sample_rate: float
@@ -549,19 +561,7 @@ class NIStemsWriter(Writer):
             # replace stems metadata from dict
             if self.stems_metadata is not None:
                 metadata['stems'] = self.stems_metadata
-            else:
-                # enumerate tracks and use default colors
-                print("Missing stem metadata, using defaults.")
-                metadata['stems'] = [
-                    {
-                        "name": "".join(
-                            [
-                                "Stem_", str(i + 1)
-                            ]
-                        ),
-                        "color": "#000000"
-                    } for i in range(4)
-                ]
+
             callArgs = [self.mp4boxcli]
             callArgs.extend(["-add", str(Path(tempdir, '0.m4a#ID=Z')), path])
             for s in range(1, data.shape[0]):

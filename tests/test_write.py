@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 import tempfile as tmp
 import subprocess as sp
+import json
+import os
 
 
 @pytest.fixture(params=[1, 4])
@@ -104,7 +106,6 @@ def test_multifileformats(audio, multifile_format, nb_stems):
         )
 
 
-
 def test_channels(audio, multichannel_format):
     if audio.ndim == 1:
         with tmp.NamedTemporaryFile(
@@ -147,3 +148,40 @@ def test_ffmpeg_errors(audio):
                     sample_rate=44100,
                     writer=stempeg.StreamsWriter()
                 )
+
+
+def ordered(obj):
+    if isinstance(obj, dict):
+        return sorted((k, ordered(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sorted(ordered(x) for x in obj)
+    else:
+        return obj
+
+
+def test_nistems():
+    mp4exc = stempeg.cmds.find_cmd("mp4box")
+
+    stems, rate = stempeg.read_stems(stempeg.example_stem_path())
+    with tmp.NamedTemporaryFile(
+        delete=False,
+        suffix='.m4a'
+    ) as tempfile:
+
+        stempeg.write_stems(
+            tempfile.name,
+            stems,
+            sample_rate=rate,
+            writer=stempeg.NIStemsWriter()
+        )
+        callArgs = [mp4exc]
+        callArgs.extend(["-dump-udta", "0:stem", tempfile.name])
+        sp.check_call(callArgs)
+
+        root, ext = os.path.splitext(tempfile.name)
+        udtaFile = root + "_stem.udta"
+        with open(stempeg.default_metadata()) as f:
+            d_metadata = json.load(f)
+        with open(udtaFile) as json_file:
+            l_metadata = json.load(json_file)
+            assert ordered(l_metadata) == ordered(d_metadata)

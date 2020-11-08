@@ -22,19 +22,19 @@
     "stems": [
         {
             "color": "#009E73",
-            "name": "Drums"
+            "name": "drums"
         },
         {
             "color": "#D55E00",
-            "name": "Bass"
+            "name": "bass"
         },
         {
             "color": "#CC79A7",
-            "name": "Other"
+            "name": "other"
         },
         {
             "color": "#56B4E9",
-            "name": "Vocals"
+            "name": "vocals"
         }
     ]
 }
