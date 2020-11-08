@@ -10,7 +10,6 @@ import subprocess as sp
 import atexit
 
 import ffmpeg
-import ipdb
 import numpy as np
 
 import stempeg

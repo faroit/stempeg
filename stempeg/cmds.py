@@ -2,9 +2,6 @@ import re
 import subprocess as sp
 import logging
 
-import ipdb
-
-
 FFMPEG_PATH = None
 FFPROBE_PATH = None
 MP4BOX_PATH = None
