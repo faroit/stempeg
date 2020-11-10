@@ -6,6 +6,7 @@ import tempfile as tmp
 import subprocess as sp
 import json
 import os
+import codecs
 
 
 @pytest.fixture(params=[1, 4])
@@ -182,6 +183,13 @@ def test_nistems():
         udtaFile = root + "_stem.udta"
         with open(stempeg.default_metadata()) as f:
             d_metadata = json.load(f)
-        with open(udtaFile) as json_file:
-            l_metadata = json.load(json_file)
-            assert ordered(l_metadata) == ordered(d_metadata)
+
+        try:
+            fileObj = codecs.open(udtaFile, encoding="utf-8")
+            fileObj.seek(8)
+            l_metadata = json.load(fileObj)
+        except json.decoder.JSONDecodeError:
+            with open(udtaFile) as json_file:
+                l_metadata = json.load(json_file)
+
+        assert ordered(l_metadata) == ordered(d_metadata)
