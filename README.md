@@ -75,7 +75,7 @@ S, _ = stempeg.read_stems(stempeg.example_stem_path(), start=1, duration=1.5)
 Writing stem files from a numpy tensor
 
 ```python
-stempeg.write_stems(S, "output.stem.mp4", rate=44100)
+stempeg.write_stems(path="output.stem.mp4", data=S, sample_rate=44100)
 ```
 
 > :warning: __Warning__: Muxing stems using _ffmpeg_ leads to multi-stream files not compatible with Native Instrument Hardware or Software. Please use [MP4Box](https://github.com/gpac/gpac) and use the `stempeg.NISTemsWriter()`
