@@ -680,7 +680,7 @@ def write_stems(
                     Stems will be saved as multiple channels
                 `StreamsWriter(...)`
                     Stem will be saved into a single multistream audio, **(default)**
-                `NIStreamsWriter(...)`
+                `NIStemsWriter(...)`
                     Stem will be saved into a single multistream audio.
                     Additionally adds Native Instruments Stems compabible
                     Metadata.
