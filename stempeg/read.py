@@ -1,200 +1,316 @@
+from stempeg.write import FilesWriter
 import numpy as np
-import subprocess as sp
-import os
-import json
 import warnings
-import tempfile as tmp
-import decimal
-import soundfile as sf
+import ffmpeg
+import pprint
+from multiprocessing import Pool
+import atexit
+from functools import partial
 
-DEVNULL = open(os.devnull, 'w')
 
+def _to_ffmpeg_time(n):
+    """ Format number of seconds to time expected by FFMPEG.
+    n: int
+        Time in seconds to format.
 
-
-def float_to_str(f, precision=5):
+    returns: Formatted time in FFMPEG format.
     """
-    Convert the given float to a string,
-    without resorting to scientific notation
-    """
-    # create a new context for this task
-    ctx = decimal.Context(rounding=decimal.ROUND_DOWN)
-
-    # 12 digits should be enough to represent a single sample of
-    # 192khz in float
-    ctx.prec = precision
-
-    d1 = ctx.create_decimal(repr(round(f, 5)))
-    return format(d1, 'f')
+    m, s = divmod(n, 60)
+    h, m = divmod(m, 60)
+    return '%d:%02d:%09.6f' % (h, m, s)
 
 
-class Info(object):
-    """Abstract Info that holds the return of ffprobe
-    
+class Reader(object):
+    """Base class for reader
+
+    Holds reader options
     """
 
-    def __init__(self, filename):
-        super(Info, self).__init__()
-        self.filename = filename
-        self.json_info = read_info(self.filename)
-
-    @property
-    def nb_audio_streams(self):
-        return sum(
-            [s['codec_type'] == 'audio' for s in self.json_info['streams']]
-        )
-
-    @property
-    def nb_samples_streams(self):
-        return [self.samples(k) for k, stream in enumerate(self.json_info['streams'])]
-
-    @property
-    def duration_streams(self):
-        return [self.duration(k) for k, stream in enumerate(self.json_info['streams'])]
-
-    def audio_stream_idx(self):
-        return [
-            s['index']
-            for s in self.json_info['streams']
-            if s['codec_type'] == 'audio'
-        ]
-
-    def samples(self, stream):
-        return int(self.json_info['streams'][stream]['duration_ts'])
-
-    def duration(self, stream):
-        return float(self.json_info['streams'][stream]['duration'])
-    
-    def rate(self, stream):
-        return int(self.json_info['streams'][stream]['sample_rate'])
-
-    def channels(self, stream):
-        return int(self.json_info['streams'][stream]['channels'])
+    def __init__(self):
+        pass
 
 
-def read_info(
-    filename
+class StreamsReader(Reader):
+    """Holding configuration for streams
+
+    This is the default reader. Nothing to be hold
+    """
+
+    def __init__(self):
+        pass
+
+
+class ChannelsReader(Reader):
+    """Using multichannels to multiplex to stems
+
+    stems will be extracted from multichannel-pairs
+    e.g. 8 channels will be converted to 4 stereo pairs
+
+
+    Args:
+        from_channels: int
+            number of channels, defaults to `2`.
+    """
+
+    def __init__(self, nb_channels=2):
+        self.nb_channels = nb_channels
+
+
+def _read_ffmpeg(
+    filename,
+    sample_rate,
+    metadata,
+    start,
+    duration,
+    dtype,
+    stem_idx
 ):
-    """Extracts FFMPEG info and returns info as JSON
+    channels = metadata.channels(stem_idx)
+    output_kwargs = {'format': 'f32le', 'ar': sample_rate}
+    if duration is not None:
+        output_kwargs['t'] = _to_ffmpeg_time(duration)
+    if start is not None:
+        output_kwargs['ss'] = _to_ffmpeg_time(start)
 
-    Returns
-    -------
-    info : Dict
-        JSON info dict
-    """
-
-    cmd = [
-        'ffprobe',
-        filename,
-        '-v', 'error',
-        '-print_format', 'json',
-        '-show_format', '-show_streams',
-    ]
-
-    out = sp.check_output(cmd)
-    info = json.loads(out.decode('utf-8'))
-    return info
+    output_kwargs['map'] = '0:' + str(stem_idx)
+    process = (
+        ffmpeg
+        .input(filename)
+        .output('pipe:', **output_kwargs)
+        .run_async(pipe_stdout=True, pipe_stderr=True))
+    buffer, _ = process.communicate()
+    waveform = np.frombuffer(buffer, dtype='<f4').reshape(-1, channels)
+    if not waveform.dtype == np.dtype(dtype):
+        waveform = waveform.astype(dtype)
+    return waveform
 
 
 def read_stems(
     filename,
-    out_type=np.float_,
-    stem_id=None,
-    start=0,
+    start=None,
     duration=None,
-    info=None
+    stem_id=None,
+    always_3d=False,
+    dtype=np.float32,
+    info=None,
+    sample_rate=None,
+    reader=StreamsReader(),
+    multiprocess=False
 ):
-    """Read STEMS format into numpy Tensor
+    """Read stems into numpy tensor
 
-    Parameters
-    ----------
-    filename : str
-        Filename of STEMS format. Typically `filename.stem.mp4`.
-    out_type : type
-        Output type. Defaults to 32bit float aka `np.float32`.
-    stem_id : int
-        Stem ID (Stream ID) to read. Defaults to `None`, which reads all
-        available stems.
-    start : float
-        Start position (seek) in seconds, defaults to 0.
-    duration : float
-        Read `duration` seconds. End position then is `start + duration`.
-        Defaults to `None`: read till the end.
-    info : object
-        provide info object, useful if read_stems is called frequently on
-        file with same configuration (#streams, #channels, samplerate).
-    Returns
-    -------
-    stems : array_like
-        The tensor of Matrix of stems. The data shape is formatted as
-        :code:`stems x channels x samples`.
+    Args:
+        filename: str, required
+            filename of the audio file to load data from.
+        start: float, optional
+            Start offset to load from in seconds.
+        duration: float, optional
+            Duration to load in seconds.
+        stem_id: int, optional
+            subbstream id, defauls to `None` (all substreams are loaded)
+        always_3d: bool, optional
+            By default, reading a single-stream audio file will return a
+            two-dimensional array.  With ``always_3d=True``, audio data is
+            always returned as a three-dimensional array, even if the audio
+            file has only one stream.
+        dtype: np.dtype, optional
+            Numpy data type to use, default to `np.float32`.
+        info: Info, Optional
+            Pass ffmpeg `Info` object to reduce number of os calls on file.
+        sample_rate: float, optional
+            Sample rate of returned audio. Defaults to `None` which results in
+            the sample rate returned from the mixture.
+        reader: Reader
+            Holds parameters for the actual reading method
+            Currently this can be one of the following:
+                `StreamsReader(...)`
+                    Read from a single multistream audio (default)
+                `ChannelsReader(...)`
+                    Read/demultiplexed from multiple channels
+        multiprocess: bool
+            Applys multiprocessing for reading substreams.
+            Defaults to `False`
 
-    Notes
-    -----
-
-    Input is expected to be in 16bit/44.1 kHz
-
+    Returns:
+        stems: array_like
+            stems tensor of `shape=(stem x samples x channels)`
+        rate: float
+            sample rate
     """
-    if info is None:
-        FFinfo = Info(filename)
+    if multiprocess:
+        _pool = Pool()
+        atexit.register(_pool.close)
     else:
-        FFinfo = info
+        _pool = None
 
-    if stem_id is not None:
-        substreams = stem_id
+    if not isinstance(filename, str):
+        filename = filename.decode()
+
+    # use ffprobe to get info object (samplerate, lengths)
+    try:
+        if info is None:
+            metadata = Info(filename)
+        else:
+            metadata = info
+
+        ffmpeg.probe(filename)
+    except ffmpeg._run.Error as e:
+        raise Warning(
+            'An error occurs with ffprobe (see ffprobe output below)\n\n{}'
+            .format(e.stderr.decode()))
+
+    # check number of audio streams in file
+    if 'streams' not in metadata.info or metadata.nb_audio_streams == 0:
+        raise Warning('No audio stream found.')
+
+    # using ChannelReader would ignore substreams
+    if isinstance(reader, ChannelsReader):
+        if metadata.nb_audio_streams != 1:
+            raise Warning(
+                'stempeg.ChannelsReader() only processes the first substream.'
+            )
+        else:
+            if metadata.audio_streams[0][
+                'channels'
+            ] % reader.nb_channels != 0:
+                raise Warning('Stems should be encoded as multi-channel.')
+            else:
+                substreams = 0
     else:
-        substreams = FFinfo.audio_stream_idx()
+        if stem_id is not None:
+            substreams = stem_id
+        else:
+            substreams = metadata.audio_stream_idx()
 
     if not isinstance(substreams, list):
         substreams = [substreams]
 
-    stems = []
-    tmps = [
-        tmp.NamedTemporaryFile(delete=False, suffix='.wav')
-        for t in substreams
-    ]
+    # if not, get sample rate from mixture
+    if sample_rate is None:
+        sample_rate = metadata.sample_rate(0)
 
-    # apply some hack that fixes ffmpegs wrong read shape when using `-ss <0.000001`
+    stems = []
+    # apply fix for very small start values of `-ss <0.000001`
+    # these will be rounded of to 0
     if start:
         if start < 1e-4:
             start = None
 
-    for tmp_id, stem in enumerate(substreams):
-        rate = FFinfo.rate(stem)
-        channels = FFinfo.channels(stem)
-        cmd = [
-            'ffmpeg',
-            '-y',
-            '-vn',
-            '-i', filename,
-            '-map', '0:' + str(stem),
-            '-acodec', 'pcm_s16le',
-            '-ar', str(rate),
-            '-ac', str(channels),
-            '-loglevel', 'error',
-            tmps[tmp_id].name
+    if _pool:
+        results = _pool.map_async(
+            partial(
+                _read_ffmpeg,
+                filename,
+                sample_rate,
+                metadata,
+                start,
+                duration,
+                dtype
+            ),
+            substreams,
+            callback=stems.extend
+        )
+        results.wait()
+        _pool.terminate()
+    else:
+        stems = [
+            _read_ffmpeg(
+                filename,
+                sample_rate,
+                metadata,
+                start,
+                duration,
+                dtype,
+                stem_idx
+            )
+            for stem_idx in substreams
         ]
-        if start:
-            cmd.insert(3, '-ss')
-            cmd.insert(4, float_to_str(start))
-
-        if duration is not None:
-            cmd.insert(-1, '-t')
-            cmd.insert(-1, float_to_str(duration))
-
-        sp.call(cmd)
-        # read wav files
-        audio, rate = sf.read(tmps[tmp_id].name)
-        tmps[tmp_id].close()
-        os.remove(tmps[tmp_id].name)
-        stems.append(audio)
-
-    # check if all stems have the same duration
     stem_durations = np.array([t.shape[0] for t in stems])
     if not (stem_durations == stem_durations[0]).all():
-        warnings.warn("Warning.......Stems differ in length and were shortend")
+        warnings.warning("Stems differ in length and were shortend")
         min_length = np.min(stem_durations)
         stems = [t[:min_length, :] for t in stems]
 
+    # aggregate list of stems to numpy tensor
     stems = np.array(stems)
-    stems = np.squeeze(stems).astype(out_type)
-    return stems, rate
+
+    # If ChannelsReader is used, demultiplex from channels
+    if isinstance(reader, (ChannelsReader)) and stems.shape[-1] > 1:
+        stems = stems.transpose(1, 0, 2)
+        stems = stems.reshape(
+            stems.shape[0], stems.shape[1], -1, reader.nb_channels
+        )
+        stems = stems.transpose(2, 0, 3, 1)[..., 0]
+
+    if not always_3d:
+        stems = np.squeeze(stems)
+    return stems, sample_rate
+
+
+class Info(object):
+    """Abstract Info that holds the return of ffprobe"""
+
+    def __init__(self, filename):
+        super(Info, self).__init__()
+        self.info = ffmpeg.probe(filename)
+        self.audio_streams = [
+            stream for stream in self.info['streams']
+            if stream['codec_type'] == 'audio'
+        ]
+
+    @property
+    def nb_audio_streams(self):
+        """Returns the number of audio substreams"""
+        return len(self.audio_streams)
+
+    @property
+    def nb_samples_streams(self):
+        """Returns a list of number of samples for each substream"""
+        return [self.samples(k) for k, stream in enumerate(self.audio_streams)]
+
+    @property
+    def duration_streams(self):
+        """Returns a list of durations (in s) for all substreams"""
+        return [
+            self.duration(k) for k, stream in enumerate(self.audio_streams)
+        ]
+
+    @property
+    def title_streams(self):
+        """Returns stream titles for all substreams"""
+        return [
+            stream['tags'].get('handler_name')
+            for stream in self.audio_streams
+        ]
+
+    def audio_stream_idx(self):
+        """Returns audio substream indices"""
+        return [s['index'] for s in self.audio_streams]
+
+    def samples(self, idx):
+        """Returns the number of samples for a stream index"""
+        return int(self.audio_streams[idx]['duration_ts'])
+
+    def duration(self, idx):
+        """Returns the duration (in seconds) for a stream index"""
+        return float(self.audio_streams[idx]['duration'])
+
+    def title(self, idx):
+        """Return the `handler_name` metadata for a given stream index"""
+        return self.audio_streams[idx]['tags']['handler_name']
+
+    def rate(self, idx):
+        # deprecated from older stempeg version
+        return self.sample_rate(idx)
+
+    def sample_rate(self, idx):
+        """Return sample rate for a given substream"""
+        return int(self.audio_streams[idx]['sample_rate'])
+
+    def channels(self, idx):
+        """Returns the number of channels for a gvien substream"""
+        return int(self.audio_streams[idx]['channels'])
+
+    def __repr__(self):
+        """Print stream information"""
+        return pprint.pformat(self.audio_streams)

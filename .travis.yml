@@ -10,19 +10,21 @@ notifications:
     email: false
 
 python:
-    - "2.7"
-    - "3.4"
-    - "3.5"
-    - "3.6"
+  - "3.6"      # current default Python on Travis CI
+  - "3.7"
+  - "3.8"
 
 env:
+    - FFMPEG_VERSION=4.3
+    - FFMPEG_VERSION=4.2
     - FFMPEG_VERSION=4.1
     - FFMPEG_VERSION=4.0.2
     - FFMPEG_VERSION=3.4
-    - FFMPEG_VERSION=2.8.6
     - FFMPEG_VERSION=3.2.4
 
 before_install:
+    - sudo apt-get update
+    - sudo apt-get -y install gpac
     - bash .travis_dependencies.sh
     - export PATH="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION/bin:$PATH";
     - hash -r
@@ -34,7 +36,7 @@ install:
 
 script:
     - python --version
-    - py.test
+    - py.test tests
 
 after_success:
     - pip uninstall -y stempeg

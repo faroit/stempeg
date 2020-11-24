@@ -3,6 +3,10 @@
 .pytest_cache/
 miniconda
 .env/
+envffmpeg/
+.vscode/
+.circleci/
+
 
 #####=== OSX ===#####
 .DS_Store
