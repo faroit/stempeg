@@ -65,7 +65,7 @@ def ffmpeg_version():
         output.splitlines() if "ffmpeg version " in str(x)
     ][0]
     hay = aac_codecs.decode('ascii')
-    match = re.findall(r'ffmpeg version (\d+\.)?(\d+\.)?(\*|\d+)', hay)
+    match = re.findall(r'ffmpeg version \w?(\d+\.)?(\d+\.)?(\*|\d+)', hay)
     if match:
         return "".join(match[0])
     else:
