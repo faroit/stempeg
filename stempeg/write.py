@@ -17,7 +17,7 @@ import stempeg
 from .cmds import FFMPEG_PATH, mp4box_exists, get_aac_codec, find_cmd
 
 
-def build_channel_map(nb_stems, nb_channels, stem_names=None):
+def _build_channel_map(nb_stems, nb_channels, stem_names=None):
     """Creates an ffmpeg complex filter string
 
     The filter is designed to multiplex multiple stems into
@@ -401,7 +401,7 @@ class StreamsWriter(Writer):
             # check if path is available and creat it
             Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-            channel_map = build_channel_map(
+            channel_map = _build_channel_map(
                 nb_stems=nb_stems,
                 nb_channels=nb_channels,
                 stem_names=self.stem_names

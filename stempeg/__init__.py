@@ -1,3 +1,17 @@
+# flake8: noqa
+"""
+Stempeg is a python package to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
+Technically, stems are audio containers that combine multiple audio streams and metadata in a single audio file. This makes it ideal to playback multitrack audio, where users can select the audio sub-stream during playback (e.g. supported by VLC). 
+
+Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and writing multistream audio, optionally [MP4Box](https://github.com/gpac/gpac) is used to create STEM files that are compatible with Native Instruments hardware and software.
+
+
+- `stempeg.read`: fast sinc resampling.
+- `stempeg.write`: FFT based convolutions.
+
+Please checkout [the Github repository](https://github.com/faroit/stempeg) for more information.
+"""
+
 from .read import read_stems
 from .read import Info
 from .read import StreamsReader, ChannelsReader
