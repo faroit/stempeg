@@ -104,7 +104,7 @@ def read_stems(
     info=None,
     sample_rate=None,
     reader=StreamsReader(),
-    multiprocess=True
+    multiprocess=False
 ):
     """Read stems into numpy tensor
 
