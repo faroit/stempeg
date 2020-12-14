@@ -6,19 +6,7 @@ import pprint
 from multiprocessing import Pool
 import atexit
 from functools import partial
-
-
-def _to_ffmpeg_time(n):
-    """ Format number of seconds to time expected by FFMPEG.
-    n: int
-        Time in seconds to format.
-
-    returns: Formatted time in FFMPEG format.
-    """
-    m, s = divmod(n, 60)
-    h, m = divmod(m, 60)
-    return '%d:%02d:%09.6f' % (h, m, s)
-
+import datetime as dt
 
 class Reader(object):
     """Base class for reader
@@ -68,9 +56,9 @@ def _read_ffmpeg(
     channels = metadata.channels(stem_idx)
     output_kwargs = {'format': 'f32le', 'ar': sample_rate}
     if duration is not None:
-        output_kwargs['t'] = _to_ffmpeg_time(duration)
+        output_kwargs['t'] = str(dt.timedelta(seconds=duration))
     if start is not None:
-        output_kwargs['ss'] = _to_ffmpeg_time(start)
+        output_kwargs['ss'] = str(dt.timedelta(seconds=start))
 
     output_kwargs['map'] = '0:' + str(stem_idx)
     process = (
@@ -190,11 +178,6 @@ def read_stems(
         sample_rate = metadata.sample_rate(0)
 
     stems = []
-    # apply fix for very small start values of `-ss <0.000001`
-    # these will be rounded of to 0
-    if start:
-        if start < 1e-4:
-            start = None
 
     if _pool:
         results = _pool.map_async(
