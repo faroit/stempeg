@@ -719,6 +719,42 @@ def write_stems(
         - `stempeg.FilesWriter` so that multiple files will be created when
             stems_as_files` is active.
 
+        ## Example 1: Write a stems file
+
+        Write `stems` tensor as multi-stream audio.
+
+        >>> stempeg.write_stems(
+        >>>     "test.stem.m4a",
+        >>>     data=stems,
+        >>>     sample_rate=44100.0
+        >>> )
+
+        ## Example 2: Advanced Example
+
+        Writing a dictionary as a bunch of MP3s,
+        instead of a single file.
+        We use `stempeg.FilesWriter`, outputs are named
+        ["output/mix.mp3", "output/drums.mp3", ...], 
+        we pass `stem_names`; also apply multiprocessing.
+
+        >>> stems = {
+        >>>    "mix": stems[0], "drums": stems[1], 
+        >>>    "bass": stems[2], "other": stems[3], 
+        >>>    "vocals": stems[4],
+        >>> }
+        >>> stempeg.write_stems(
+        >>> ("output", ".mp3"),
+        >>> stems,
+        >>> sample_rate=rate,
+        >>> writer=stempeg.FilesWriter(
+        >>>         multiprocess=True,
+        >>>         output_sample_rate=48000,
+        >>>         stem_names=["mix", "drums", "bass", "other", "vocals"]
+        >>>     )
+        >>> )
+
+
+
     """
     # check if ffmpeg installed
     if int(stempeg.ffmpeg_version()[0]) < 3:

@@ -167,7 +167,6 @@ def read_stems(
             `S`, if the file has multiple streams and,
             `C` is the audio has multiple channels.
 
-
     >>> audio, sample_rate = stempeg.read_stems("test.stem.mp4")
     >>> audio.shape
     [5, 220500, 2]
