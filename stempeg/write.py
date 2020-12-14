@@ -1,3 +1,9 @@
+# flake8: noqa
+"""
+Writing module to save stems to disk.
+
+"""
+
 import base64
 import json
 import logging
@@ -119,9 +125,9 @@ def _build_channel_map(nb_stems, nb_channels, stem_names=None):
 
 
 class Writer(object):
-    """Base class for writer
+    """Base template class for writer
 
-    Takes tensor and writes to disk
+    Takes tensor and writes back to disk
     """
 
     def __init__(self):
@@ -266,13 +272,12 @@ class ChannelsWriter(Writer):
         E.g. `wav` works but `mp3` won't.
 
     Args:
-        codec (str):
-            Specifies ffmpeg codec being used. Defaults to `None` which
-            automatically selects default codec for each container
-        bitrate (int):
-            Bitrate in Bits per second. Defaults to None
-        output_sample_rate Optional(float):
-            Optionally, applies resampling, if different to `sample_rate`.
+        codec (str): Specifies ffmpeg codec being used.
+            Defaults to `None` which automatically selects default
+            codec for each container
+        bitrate (int): Bitrate in Bits per second. Defaults to None
+        output_sample_rate (float, optional): Optionally, applies
+            resampling, if different to `sample_rate`.
             Defaults to `None` which `sample_rate`.
     """
     def __init__(
@@ -338,16 +343,15 @@ class StreamsWriter(Writer):
     temporary wav file written to disk. Therefore, writing can be slow.
 
     Args:
-        codec (str):
-            Specifies ffmpeg codec being used. Defaults to `None` which
-            automatically selects default codec for each container
-        bitrate (int):
-            Bitrate in Bits per second. Defaults to None
-        output_sample_rate Optional(float):
-            Optionally, applies resampling, if different to `sample_rate`.
+        codec (str): Specifies ffmpeg codec being used.
+            Defaults to `None` which automatically selects default
+            codec for each container
+        bitrate (int): Bitrate in Bits per second. Defaults to None
+        output_sample_rate (float): Optionally, applies
+            resampling, if different to `sample_rate`.
             Defaults to `None` which `sample_rate`.
-        stem_names (list(str)):
-            list of stem names that match the number of stems.
+        stem_names (str): list of stem names that
+            match the number of stems.
     """
     def __init__(
         self,
@@ -462,8 +466,7 @@ class NIStemsWriter(Writer):
     https://github.com/axeldelafosse/stemgen/blob/909d9422af0738457303962262f99072a808d0c1/ni-stem/_internal.py#L38
 
     Args:
-        default_metadata: Dict
-            Metadata to be injected into the mp4 substream.
+        default_metadata (Dict): Metadata to be injected into the mp4 substream.
             Defaults to `stempeg.default_metadata()`.
         stems_metadata: List
             Set dictory of track names and colors
@@ -599,22 +602,21 @@ def write_audio(
 ):
     """Write multichannel audio from numpy tensor
 
+    Audio writer for multi-channel but not multi-stream audio.
+    Can be used directly, when stems are not required.
+
     Args:
-        path: str
-            Output file name. Extension sets container (and default codec)
-        data: array_like
-            Audio tensor. The data shape is formatted as
-            :code:`shape=(samples, channels)` or `(samples,)`
-        sample_rate: float
-            Samplerate. Defaults to 44100.0 Hz.
-        output_sample_rate: float, optional
-            Applies resampling, if different to `sample_rate`.
-            Defaults to `None` which `sample_rate`.
-        codec: str
-            Specifies ffmpeg codec being used. Defaults to `None` which
-            automatically selects default codec for each container
-        bitrate: int
-            Bitrate in Bits per second. Defaults to None
+        path (str): Output file name. 
+            Extension sets container (and default codec).
+        data (array_like): Audio tensor. The data shape is formatted as
+            `shape=(samples, channels)` or `(samples,)`.
+        sample_rate (float): Samplerate. Defaults to 44100.0 Hz.
+        output_sample_rate (float): Applies resampling, if different
+            to `sample_rate`. Defaults to `None` which uses `sample_rate`.
+        codec (str): Specifies ffmpeg codec being used.
+            Defaults to `None` which automatically selects default
+            codec for each container
+        bitrate (int): Bitrate in Bits per second. Defaults to None
     """
 
     # check if path is available and creat it
@@ -656,63 +658,65 @@ def write_stems(
     sample_rate=44100,
     writer=StreamsWriter(stem_names=None)
 ):
-    """Write stems from numpy Tensor
+    """Write a stems numpy tensor to audio file(s).
 
     Args:
-        path: str
-            Output file_name of the stems file. Note that the extension of the
-            path determines the used output container format (e.g. mp4)
-            which can differ from the `codec`.
-        data: array_like or dict
-            The tensor of stems. The data shape is formatted as
-                :code:`(stems, samples, channels)`.
-            If a dict is provided, we assume:
-                :code: `{ "name": array_like of shape (samples, channels), ...}`
-        sample_rate: int
-            Output samplerate. Defaults to 44100 Hz.
-        writer: object that holds parameters for the actual writing method
-            Currently this can be one of the following:
-                `FilesWriter(...)`
-                    Stems will be saved as multiple files.
-                    Here, basename(path), is ignored and just the
-                    parent path + extension is used.
-                `ChannelsWriter(...)`
-                    Stems will be saved as multiple channels
-                `StreamsWriter(...)`
-                    Stem will be saved into a single multistream audio, **(default)**
-                `NIStemsWriter(...)`
-                    Stem will be saved into a single multistream audio.
-                    Additionally adds Native Instruments Stems compabible
-                    Metadata.
+        path (str): Output file_name of the stems file. Note
+            that the extension of the path determines the used
+            output container format (e.g. mp4) which can differ
+            from the `codec`.
+        data (array_like or dict): The tensor of stems.
+            The data shape is formatted as
+                `(stems, samples, channels)`.
+            If a `dict` is provided, we assume:
+                `{ "name": array_like of shape (samples, channels), ...}`
+        sample_rate (int): Output samplerate. Defaults to 44100 Hz.
+        writer (Writer): Stempeg supports four methods to save
+            multi-stream audio.
+            Each of the method has different number of parameters.
+            To select a method one of the following setting and be passed:
+
+            `stempeg.FilesWriter`
+                Stems will be saved into multiple files. For the naming,
+                `basename(path)` is ignored and just the
+                parent of `path`  and its `extension` is used.
+
+            `stempeg.ChannelsWriter`
+                Stems will be saved as multiple channels.
+
+            `stempeg.StreamsWriter` **(default)**.
+                Stems will be saved into a single a multi-stream file.
+
+            `stempeg.NIStemsWriter`
+                Stem will be saved into a single multistream audio.
+                Additionally Native Instruments Stems compabible
+                Metadata is added. This requires the installation of
+                `MP4Box`. See [Readme](../README.md) for more info.
     Notes:
-        The procedure for writing stem files varies depending of the
-        specified output container format (aka. the `path` extension).
-        There are two basic ways to write stems:
+        Note that file ending of `path` sets the container but not the codec!
+        The support for different stem writers depends on the specified output 
+        container format (aka. the `path` extension/appendix).
 
-        1.) the container supports multiple stems (`mp4/m4a`, `opus`, `mka`)
-        2.) the container does not support multiple stems (`wav`, `mp3`, `flac`)
+        We differentiate between
 
-        For 1.) we provide two options:
+        ### Container supports multiple stems (`mp4/m4a`, `opus`, `mka`)
 
-        1a.) `stempeg.StreamsWriter(..)`
+        - `stempeg.StreamsWriter` and `stempeg.NIStemsWriter`
             stems will be saved as sub-streams.
-        1b.) `stempeg.ChannelsWriter()`
-            stems will be multiplexed into channels and saved as
-            multichannel file.
-            E.g. an `audio` tensor of `shape=(stems, samples, 2)`
+        - `stempeg.ChannelsWriter`
+            stems will be multiplexed into channels and saved as a single
+            multichannel file. E.g. an `audio` tensor of `shape=(stems, samples, 2)`
             will be converted to a single-stem multichannel audio
             `(samples, stems*2)`.
-        1c.) stems will be saved as multiple files when `FilesWriter()` is
-            used.
+        - `stempeg.FilesWriter` so that multiple files will be created when
+            stems_as_files` is active.
 
-        For 2.), when the container does not support multiple stems there
-        are two options:
 
-        2a) Using `stempeg.ChannelsWriter` when the container supports multi-channel
-            audio. E.g. works for `wav` and `flac`. Note that file ending of `path`
-            determines the container
-            (but not the codec!).
-        2b) `stems_as_files` so that multiple files will be created when
+        ### A container does not support multiple stems there
+
+        - `stempeg.ChannelsWriter` when the container supports multi-channel
+            audio. E.g. works for `wav` and `flac`.
+        - `stempeg.FilesWriter` so that multiple files will be created when
             stems_as_files` is active.
 
     """

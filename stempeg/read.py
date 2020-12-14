@@ -1,3 +1,9 @@
+# flake8: noqa
+"""
+Writing module to load stems into numpy tensors.
+
+
+"""
 from stempeg.write import FilesWriter
 import numpy as np
 import warnings
@@ -103,8 +109,8 @@ def read_stems(
     """Read stems into numpy tensor
 
     This function can read both, multi-stream and single stream audio files.
-    If used for reading normal audio, the output is a 1d or 2d (mono/stereo) array.
-    When multiple streams are read, the output is a 3d array.
+    If used for reading normal audio, the output is a 1d or 2d (mono/stereo)
+    array. When multiple streams are read, the output is a 3d array.
 
     An option stems_from_multichannel was added to load stems that are
     aggregated into multichannel audio (concatenation of pairs of
@@ -114,7 +120,7 @@ def read_stems(
     save the stem file (`reader=stempeg.StreamsReader()`). To support
     multistream files on audio formats that do not support multiple streams
     (e.g. WAV), streams can be mapped to multiple pairs of channels. In that
-    case, `stempeg.ChannelsReader()`, can be passed. Also see: 
+    case, `stempeg.ChannelsReader()`, can be passed. Also see:
     `stempeg.write.ChannelsWriter`.
 
 
@@ -135,7 +141,7 @@ def read_stems(
             Pass ffmpeg `Info` object to reduce number of os calls on file.
             This can be used e.g. the sample rate and length of a track is
             already known in advance. Useful for ML training where the
-            info objects can be pre-processed, thus audio loading can 
+            info objects can be pre-processed, thus audio loading can
             be speed up.
         sample_rate: float, optional
             Sample rate of returned audio. Defaults to `None` which results in
@@ -147,7 +153,7 @@ def read_stems(
                 `ChannelsReader(...)`
                     Read/demultiplexed from multiple channels.
         multiprocess: bool
-            Applys multi-processing for reading substreams in parallel to 
+            Applys multi-processing for reading substreams in parallel to
             speed up reading. Defaults to `True`
 
     Returns:
@@ -274,7 +280,11 @@ def read_stems(
 
 
 class Info(object):
-    """Abstract Info that holds the return of ffprobe"""
+    """Audio properties that hold a number of metadata.
+
+    The object is created when can be used when `read_stems` is called.
+    This is can be passed, to `read_stems` to reduce loading time.
+    """
 
     def __init__(self, filename):
         super(Info, self).__init__()
