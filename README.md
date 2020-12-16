@@ -56,12 +56,27 @@ A small excerpt from a music track by [The Easton Ellises](https://www.heise.de/
 
 ### Reading stems
 
+Stempeg is designed to read multi-stream and single stream audio files.
+Thus it can replace your normal audio loading pipeline where the output is a 1d or 2d (mono/stereo).
+array. When multiple streams are read, the output is a 3d array.
+
+An option stems_from_multichannel was added to load stems that are
+aggregated into multichannel audio (concatenation of pairs of
+stereo channels), see more info on audio [`stempeg.write.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).
+
+By default [`read_stems`](https://faroit.com/stempeg/read.html#stempeg.read.read_stems) assumes that multiple substreams were used to
+save the stem file (`reader=stempeg.StreamsReader()`). To support
+multistream files on audio formats that do not support multiple streams
+(e.g. WAV), streams can be mapped to multiple pairs of channels. In that
+case, `stempeg.ChannelsReader()`, can be passed. Also see:
+[`stempeg.write.ChannelsWriter`](https://faroit.com/stempeg/write.html#stempeg.write.ChannelsWriter).
+
 ```python
 import stempeg
 S, rate = stempeg.read_stems(stempeg.example_stem_path())
 ```
 
-`S` is a numpy tensor that includes the time domain signals scaled to `[-1..1]`. The shape is `(stems, samples, channels)`.
+`S` is a numpy tensor that includes the time domain signals scaled to `[-1..1]`. The shape is `(stems, samples, channels)`. An detailed documentation of the `read_stems` can [be viewed here](https://faroit.com/stempeg/read.html#stempeg.read.read_stems).
 
 #### Reading individual streams
 
