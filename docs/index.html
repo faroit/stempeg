@@ -27,14 +27,15 @@ Technically, stems are audio …" />
 Technically, stems are audio containers that combine multiple audio streams and metadata in a single audio file. This makes it ideal to playback multitrack audio, where users can select the audio sub-stream during playback (e.g. supported by VLC). </p>
 <p>Under the hood, <em>stempeg</em> uses <a href="https://www.ffmpeg.org/">ffmpeg</a> for reading and writing multistream audio, optionally <a href="https://github.com/gpac/gpac">MP4Box</a> is used to create STEM files that are compatible with Native Instruments hardware and software.</p>
 <ul>
-<li><code><a title="stempeg.read" href="read.html">stempeg.read</a></code>: fast sinc resampling.</li>
-<li><code><a title="stempeg.write" href="write.html">stempeg.write</a></code>: FFT based convolutions.</li>
+<li><code><a title="stempeg.read" href="read.html">stempeg.read</a></code>: reading audio tensors and metadata.</li>
+<li><code><a title="stempeg.write" href="write.html">stempeg.write</a></code>: writing audio tensors.</li>
 </ul>
+<p><img alt="stempeg_scheme" src="https://user-images.githubusercontent.com/72940/102477776-16960a00-405d-11eb-9389-1ea9263cf99d.png"></p>
 <p>Please checkout <a href="https://github.com/faroit/stempeg">the Github repository</a> for more information.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/b3ff78e61ee169342a7a3da06e8e21688312b433/stempeg/__init__.py#L0-L87" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/__init__.py#L0-L88" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python"># flake8: noqa
 &#34;&#34;&#34;
@@ -43,9 +44,10 @@ Technically, stems are audio containers that combine multiple audio streams and 
 
 Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and writing multistream audio, optionally [MP4Box](https://github.com/gpac/gpac) is used to create STEM files that are compatible with Native Instruments hardware and software.
 
+- `stempeg.read`: reading audio tensors and metadata.
+- `stempeg.write`: writing audio tensors.
 
-- `stempeg.read`: fast sinc resampling.
-- `stempeg.write`: FFT based convolutions.
+![stempeg_scheme](https://user-images.githubusercontent.com/72940/102477776-16960a00-405d-11eb-9389-1ea9263cf99d.png)
 
 Please checkout [the Github repository](https://github.com/faroit/stempeg) for more information.
 &#34;&#34;&#34;
@@ -163,7 +165,7 @@ def ffmpeg_version():
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/b3ff78e61ee169342a7a3da06e8e21688312b433/stempeg/__init__.py#L48-L59" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/__init__.py#L49-L60" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def default_metadata():
     &#34;&#34;&#34;Get the path to included stems metadata.
@@ -192,7 +194,7 @@ def ffmpeg_version():
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/b3ff78e61ee169342a7a3da06e8e21688312b433/stempeg/__init__.py#L34-L45" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/__init__.py#L35-L46" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def example_stem_path():
     &#34;&#34;&#34;Get the path to an included stem file.
@@ -221,7 +223,7 @@ def ffmpeg_version():
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/b3ff78e61ee169342a7a3da06e8e21688312b433/stempeg/__init__.py#L62-L86" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/__init__.py#L63-L87" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def ffmpeg_version():
     &#34;&#34;&#34;Returns the available ffmpeg version
