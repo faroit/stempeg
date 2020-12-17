@@ -5,9 +5,10 @@ Technically, stems are audio containers that combine multiple audio streams and 
 
 Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and writing multistream audio, optionally [MP4Box](https://github.com/gpac/gpac) is used to create STEM files that are compatible with Native Instruments hardware and software.
 
+- `stempeg.read`: reading audio tensors and metadata.
+- `stempeg.write`: writing audio tensors.
 
-- `stempeg.read`: fast sinc resampling.
-- `stempeg.write`: FFT based convolutions.
+![stempeg_scheme](https://user-images.githubusercontent.com/72940/102477776-16960a00-405d-11eb-9389-1ea9263cf99d.png)
 
 Please checkout [the Github repository](https://github.com/faroit/stempeg) for more information.
 """
