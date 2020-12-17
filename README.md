@@ -4,10 +4,21 @@
 [![Latest Version](https://img.shields.io/pypi/v/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 
-Python package to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) files.
+Python package to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) audio files.
 Technically, stems are audio containers that combine multiple audio streams and metadata in a single audio file. This makes it ideal to playback multitrack audio, where users can select the audio sub-stream during playback (e.g. supported by VLC). 
 
 Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and writing multistream audio, optionally [MP4Box](https://github.com/gpac/gpac) is used to create STEM files that are compatible with Native Instruments hardware and software.
+
+#### Features
+
+- robust and fast interface for ffmpeg to read and write any supported format from/to numpy.
+- allows to store multi-track audio within audio formats by aggregate streams into channels (concatenation of pairs of
+stereo channels).
+- support for internal ffmpeg resampling furing read and write.
+- create mp4 stems compatible to Native Instruments traktor.
+- using multiprocessing for reading substreams in parallel.
+- using multiprocessing to write multiple files.
+
 
 ## Installation
 
@@ -15,7 +26,7 @@ Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and
 
 _stempeg_ relies on [ffmpeg](https://www.ffmpeg.org/) (>= 3.2 is suggested).
 
-The Installation if ffmpeg differ among operating systems. If you use [Anaconda](https://anaconda.org/anaconda/python) you can install ffmpeg on Windows/Mac/Linux using the following command:
+The Installation if ffmpeg differ among operating systems. If you use [anaconda](https://anaconda.org/anaconda/python) you can install ffmpeg on Windows/Mac/Linux using the following command:
 
 ```
 conda install -c conda-forge ffmpeg
@@ -52,9 +63,11 @@ conda install -c conda-forge stempeg
 
 ## Usage
 
+![stempeg_scheme](https://user-images.githubusercontent.com/72940/102477776-16960a00-405d-11eb-9389-1ea9263cf99d.png)
+
 A small excerpt from a music track by [The Easton Ellises](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html#englisch), licensed under Creative Commons CC BY-NC-SA 3.0 is included and can be accessed using `stempeg.example_stem_path()`.
 
-### Reading stems
+### Reading audio
 
 Stempeg is designed to read multi-stream and single stream audio files.
 Thus it can replace your normal audio loading pipeline where the output is a 1d or 2d (mono/stereo).
@@ -62,14 +75,14 @@ array. When multiple streams are read, the output is a 3d array.
 
 An option stems_from_multichannel was added to load stems that are
 aggregated into multichannel audio (concatenation of pairs of
-stereo channels), see more info on audio [`stempeg.write.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).
+stereo channels), see more info on audio [`stempeg.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).
 
 By default [`read_stems`](https://faroit.com/stempeg/read.html#stempeg.read.read_stems) assumes that multiple substreams were used to
 save the stem file (`reader=stempeg.StreamsReader()`). To support
 multistream files on audio formats that do not support multiple streams
 (e.g. WAV), streams can be mapped to multiple pairs of channels. In that
 case, `stempeg.ChannelsReader()`, can be passed. Also see:
-[`stempeg.write.ChannelsWriter`](https://faroit.com/stempeg/write.html#stempeg.write.ChannelsWriter).
+[`stempeg.ChannelsWriter`](https://faroit.com/stempeg/write.html#stempeg.write.ChannelsWriter).
 
 ```python
 import stempeg
