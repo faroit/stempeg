@@ -1,5 +1,6 @@
 # stempeg = stems + ffmpeg
 
+
 [![Build Status](https://travis-ci.org/faroit/stempeg.svg?branch=master)](https://travis-ci.org/faroit/stempeg)
 [![Latest Version](https://img.shields.io/pypi/v/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
@@ -12,13 +13,13 @@ Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and
 #### Features
 
 - robust and fast interface for ffmpeg to read and write any supported format from/to numpy.
-- allows to store multi-track audio within audio formats by aggregate streams into channels (concatenation of pairs of
+- reading supports seeking and duration.
+- control container and codec as well as bitrate when compressed audio is written. 
+- store multi-track audio within audio formats by aggregate streams into channels (concatenation of pairs of
 stereo channels).
 - support for internal ffmpeg resampling furing read and write.
 - create mp4 stems compatible to Native Instruments traktor.
-- using multiprocessing for reading substreams in parallel.
-- using multiprocessing to write multiple files.
-
+- using multiprocessing to speed up reading substreams and write multiple files.
 
 ## Installation
 
@@ -65,24 +66,18 @@ conda install -c conda-forge stempeg
 
 ![stempeg_scheme](https://user-images.githubusercontent.com/72940/102477776-16960a00-405d-11eb-9389-1ea9263cf99d.png)
 
-A small excerpt from a music track by [The Easton Ellises](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html#englisch), licensed under Creative Commons CC BY-NC-SA 3.0 is included and can be accessed using `stempeg.example_stem_path()`.
-
 ### Reading audio
 
-Stempeg is designed to read multi-stream and single stream audio files.
-Thus it can replace your normal audio loading pipeline where the output is a 1d or 2d (mono/stereo).
-array. When multiple streams are read, the output is a 3d array.
-
-An option stems_from_multichannel was added to load stems that are
-aggregated into multichannel audio (concatenation of pairs of
-stereo channels), see more info on audio [`stempeg.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).
+Stempeg can read multi-stream and single stream audio files, thus, it can replace your normal audio loaders for 1d or 2d (mono/stereo) arrays.
 
 By default [`read_stems`](https://faroit.com/stempeg/read.html#stempeg.read.read_stems) assumes that multiple substreams were used to
 save the stem file (`reader=stempeg.StreamsReader()`). To support
-multistream files on audio formats that do not support multiple streams
+multi-stream even when the audio container doesn't support multiple streams
 (e.g. WAV), streams can be mapped to multiple pairs of channels. In that
 case, `stempeg.ChannelsReader()`, can be passed. Also see:
 [`stempeg.ChannelsWriter`](https://faroit.com/stempeg/write.html#stempeg.write.ChannelsWriter).
+
+Note, a small stems excerpt from [The Easton Ellises](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html#englisch), licensed under Creative Commons CC BY-NC-SA 3.0 is included and can be accessed using `stempeg.example_stem_path()`.
 
 ```python
 import stempeg
@@ -118,6 +113,9 @@ stempeg.write_stems(path="output.stem.mp4", data=S, sample_rate=44100)
 
 > :warning: __Warning__: Muxing stems using _ffmpeg_ leads to multi-stream files not compatible with Native Instrument Hardware or Software. Please use [MP4Box](https://github.com/gpac/gpac) and use the `stempeg.NISTemsWriter()`
 
+Passing see more info on audio [`stempeg.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).
+
+An example that documents the features are 
 ### Use the command line tools
 
 _stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles. The `-s` switch sets the start, the `-t` switch sets the duration.
