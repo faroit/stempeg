@@ -70,21 +70,18 @@ conda install -c conda-forge stempeg
 
 Stempeg can read multi-stream and single stream audio files, thus, it can replace your normal audio loaders for 1d or 2d (mono/stereo) arrays.
 
-By default [`read_stems`](https://faroit.com/stempeg/read.html#stempeg.read.read_stems) assumes that multiple substreams were used to
-save the stem file (`reader=stempeg.StreamsReader()`). To support
-multi-stream even when the audio container doesn't support multiple streams
+By default [`read_stems`](https://faroit.com/stempeg/read.html#stempeg.read.read_stems), assumes that multiple substreams can exit (default `reader=stempeg.StreamsReader()`). 
+To support multi-stream, even when the audio container doesn't support multiple streams
 (e.g. WAV), streams can be mapped to multiple pairs of channels. In that
-case, `stempeg.ChannelsReader()`, can be passed. Also see:
+case, `reader=stempeg.ChannelsReader()`, can be passed. Also see:
 [`stempeg.ChannelsWriter`](https://faroit.com/stempeg/write.html#stempeg.write.ChannelsWriter).
-
-Note, a small stems excerpt from [The Easton Ellises](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html#englisch), licensed under Creative Commons CC BY-NC-SA 3.0 is included and can be accessed using `stempeg.example_stem_path()`.
 
 ```python
 import stempeg
 S, rate = stempeg.read_stems(stempeg.example_stem_path())
 ```
 
-`S` is a numpy tensor that includes the time domain signals scaled to `[-1..1]`. The shape is `(stems, samples, channels)`. An detailed documentation of the `read_stems` can [be viewed here](https://faroit.com/stempeg/read.html#stempeg.read.read_stems).
+`S` is a numpy tensor that includes the time domain signals scaled to `[-1..1]`. The shape is `(stems, samples, channels)`. An detailed documentation of the `read_stems` can [be viewed here](https://faroit.com/stempeg/read.html#stempeg.read.read_stems). Note, a small stems excerpt from [The Easton Ellises](https://www.heise.de/ct/artikel/c-t-Remix-Wettbewerb-The-Easton-Ellises-2542427.html#englisch), licensed under Creative Commons CC BY-NC-SA 3.0 is included and can be accessed using `stempeg.example_stem_path()`.
 
 #### Reading individual streams
 
@@ -103,19 +100,49 @@ S, _ = stempeg.read_stems(stempeg.example_stem_path(), start=1, duration=1.5)
 # read from second 1.0 to second 2.5
 ```
 
-### Writing stems
+### Writing audio
 
-Writing stem files from a numpy tensor
+As seen in the flow chart above, stempeg supports multiple ways to write multi-track audio.
+
+#### Write multi-channel audio
+
+[`stempeg.write_audio`](http://faroit.com/stempeg/write.html#stempeg.write.write_audio) can be used for single-stream, multi-channel audio files.
+Stempeg wraps a number of ffmpeg parameter to resample the output sample rate and adjust the audio codec, if necessary.
 
 ```python
-stempeg.write_stems(path="output.stem.mp4", data=S, sample_rate=44100)
+stempeg.write_audio(path="out.mp4", data=S, sample_rate=44100.0, output_sample_rate=48000.0, codec='aac', bitrate=256000)
 ```
 
-> :warning: __Warning__: Muxing stems using _ffmpeg_ leads to multi-stream files not compatible with Native Instrument Hardware or Software. Please use [MP4Box](https://github.com/gpac/gpac) and use the `stempeg.NISTemsWriter()`
+#### Writing multi-stream audio
 
-Passing see more info on audio [`stempeg.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).
+Writing stem files from a numpy tensor can done with.
 
-An example that documents the features are 
+```python
+stempeg.write_stems(path="output.stem.mp4", data=S, sample_rate=44100, writer=stempeg.StreamsWriter())
+```
+
+As seen in the flow chart above, stempeg supports multiple ways to write multi-stream audio. 
+Each of the method has different number of parameters. To select a method one of the following setting and be passed:
+
+* `stempeg.FilesWriter`
+    Stems will be saved into multiple files. For the naming,
+    `basename(path)` is ignored and just the
+    parent of `path`  and its `extension` is used.
+* `stempeg.ChannelsWriter`
+    Stems will be saved as multiple channels.
+* `stempeg.StreamsWriter` **(default)**.
+    Stems will be saved into a single a multi-stream file.
+* `stempeg.NIStemsWriter`
+    Stem will be saved into a single multistream audio.
+    Additionally Native Instruments Stems compabible
+    Metadata is added. This requires the installation of
+    `MP4Box`. 
+    
+> :warning: __Warning__: Muxing stems using _ffmpeg_ leads to multi-stream files not compatible with Native Instrument Hardware or Software. Please use [MP4Box](https://github.com/gpac/gpac) if you use the `stempeg.NISTemsWriter()`
+
+For more information on writing stems, see  [`stempeg.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).
+An example that documents the advanced features of the writer, see [readwrite.py](/examples/readwrite.py).
+
 ### Use the command line tools
 
 _stempeg_ provides a convenient cli tool to convert a stem to multiple wavfiles. The `-s` switch sets the start, the `-t` switch sets the duration.
@@ -128,7 +155,7 @@ stem2wav The Easton Ellises - Falcon 69.stem.mp4 -s 1.0 -t 2.5
 
 #### How can I improve the reading performance?
 
-`read_stems` is called repeatedly, it always does two system calls, one for getting the file info and one for the actual readingTo speed this up you could provide the `Info` object to `read_stems` if the number of streams, the number of channels and the samplerate is identical.
+`read_stems` is called repeatedly, it always does two system calls, one for getting the file info and one for the actual reading speed this up you could provide the `Info` object to `read_stems` if the number of streams, the number of channels and the sample rate is identical.
 
 ```python
 file_path = stempeg.example_stem_path()
