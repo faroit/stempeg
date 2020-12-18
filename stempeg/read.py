@@ -59,7 +59,7 @@ def _read_ffmpeg(
     dtype,
     stem_idx
 ):
-    """Loading data usingg ffmpeg and numpy
+    """Loading data using ffmpeg and numpy
 
     Args:
         filename (str): filename path
@@ -75,7 +75,7 @@ def _read_ffmpeg(
         (array_like): numpy audio array
     """
     channels = metadata.channels(stem_idx)
-    output_kwargs = {'format': 'f32le', 'ar': sample_rate}
+    output_kwargs = {'format': 's16le', 'acodec': 'pcm_s16le', 'ar': sample_rate}
     if duration is not None:
         output_kwargs['t'] = str(dt.timedelta(seconds=duration))
     if start is not None:
@@ -88,11 +88,13 @@ def _read_ffmpeg(
         .output('pipe:', **output_kwargs)
         .run_async(pipe_stdout=True, pipe_stderr=True))
     buffer, _ = process.communicate()
-    waveform = np.frombuffer(buffer, dtype='<f4').reshape(-1, channels)
+    waveform = np.frombuffer(buffer, dtype=np.int16).reshape(-1, channels)
     if not waveform.dtype == np.dtype(dtype):
-        waveform = waveform.astype(dtype)
+        waveform = waveform.astype(dtype, order='C')
+        if np.issubdtype(np.float_, np.floating):
+            # normalize to [-1, 1] when returning float
+            waveform = waveform / 32768.0
     return waveform
-
 
 def read_stems(
     filename,
@@ -100,7 +102,7 @@ def read_stems(
     duration=None,
     stem_id=None,
     always_3d=False,
-    dtype=np.float32,
+    dtype=np.float_,
     info=None,
     sample_rate=None,
     reader=StreamsReader(),
