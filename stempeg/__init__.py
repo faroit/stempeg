@@ -29,7 +29,7 @@ from os import path as op
 import argparse
 import pkg_resources
 
-__version__ = "0.2.0"
+__version__ = "0.2.2"
 
 
 def example_stem_path():
