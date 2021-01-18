@@ -53,10 +53,11 @@ class ChannelsReader(Reader):
 def _read_ffmpeg(
     filename,
     sample_rate,
-    metadata,
+    channels,
     start,
     duration,
     dtype,
+    ffmpeg_format,
     stem_idx
 ):
     """Loading data using ffmpeg and numpy
@@ -64,18 +65,18 @@ def _read_ffmpeg(
     Args:
         filename (str): filename path
         sample_rate (int): sample rate
-        metadata (Info): metadata info object needed to
+        nb_channels (int): metadata info object needed to
             know the channel configuration in advance
         start (float): start position in seconds
         duration (float): duration in seconds
         dtype (numpy.dtype): Type of audio array to be casted into
         stem_idx (int): stream id
+        ffmpeg_format (str): ffmpeg
 
     Returns:
         (array_like): numpy audio array
     """
-    channels = metadata.channels(stem_idx)
-    output_kwargs = {'format': 's16le', 'acodec': 'pcm_s16le', 'ar': sample_rate}
+    output_kwargs = {'format': ffmpeg_format, 'ar': sample_rate}
     if duration is not None:
         output_kwargs['t'] = str(dt.timedelta(seconds=duration))
     if start is not None:
@@ -88,12 +89,28 @@ def _read_ffmpeg(
         .output('pipe:', **output_kwargs)
         .run_async(pipe_stdout=True, pipe_stderr=True))
     buffer, _ = process.communicate()
-    waveform = np.frombuffer(buffer, dtype=np.int16).reshape(-1, channels)
+
+    # decode to raw pcm format
+    if ffmpeg_format == "f64le":
+        # PCM 64 bit float 
+        numpy_dtype = '<f8'
+    elif ffmpeg_format == "f32le":
+        # PCM 32 bit float 
+        numpy_dtype = '<f4'
+    elif ffmpeg_format == "s16le":
+        # PCM 16 bit signed int
+        numpy_dtype = '<i2'
+    else:
+        raise NotImplementedError("ffmpeg format is not supported")
+
+    waveform = np.frombuffer(buffer, dtype=numpy_dtype).reshape(-1, channels)
+
     if not waveform.dtype == np.dtype(dtype):
+        # cast to target/output dtype
         waveform = waveform.astype(dtype, order='C')
-        if np.issubdtype(np.float_, np.floating):
-            # normalize to [-1, 1] when returning float
-            waveform = waveform / 32768.0
+        # when coming from integer, apply normalization t0 [-1.0, 1.0]
+        if np.issubdtype(numpy_dtype, np.integer):
+            waveform = waveform / (np.iinfo(numpy_dtype).max + 1.0)
     return waveform
 
 def read_stems(
@@ -103,6 +120,7 @@ def read_stems(
     stem_id=None,
     always_3d=False,
     dtype=np.float_,
+    ffmpeg_format="f32le",
     info=None,
     sample_rate=None,
     reader=StreamsReader(),
@@ -139,6 +157,13 @@ def read_stems(
             file has only one stream.
         dtype: np.dtype, optional.
             Numpy data type to use, default to `np.float32`.
+        ffmpeg_format: intermediate level ffmpeg output format.
+            When decoding the input file, a number of PCM subformats are supported.
+            This format is piped internally to numpy. By default, 
+            32bit PCM float (`f32le`) is used which has the best compatibility,
+            and yields in not loss in bit depth of most common audio files.
+            When the input is only 16bit integer (e.g. standard wav files),
+            `s16le` improves reading speed while yielding the same results.
         info: Info, Optional
             Pass ffmpeg `Info` object to reduce number of os calls on file.
             This can be used e.g. the sample rate and length of a track is
@@ -227,6 +252,14 @@ def read_stems(
     if sample_rate is None:
         sample_rate = metadata.sample_rate(0)
 
+    _chans = metadata.channels_streams
+    # check if all substreams have the same number of channels
+    if len(set(_chans)) == 1:
+        channels = min(_chans)
+    else:
+        raise RuntimeError("Stems do not have the same number of channels per substream")
+    
+    # set channels to minimum channel per stream
     stems = []
 
     if _pool:
@@ -235,10 +268,11 @@ def read_stems(
                 _read_ffmpeg,
                 filename,
                 sample_rate,
-                metadata,
+                channels,
                 start,
                 duration,
-                dtype
+                dtype,
+                ffmpeg_format
             ),
             substreams,
             callback=stems.extend
@@ -250,10 +284,11 @@ def read_stems(
             _read_ffmpeg(
                 filename,
                 sample_rate,
-                metadata,
+                channels,
                 start,
                 duration,
                 dtype,
+                ffmpeg_format,
                 stem_idx
             )
             for stem_idx in substreams
@@ -304,6 +339,13 @@ class Info(object):
     def nb_samples_streams(self):
         """Returns a list of number of samples for each substream"""
         return [self.samples(k) for k, stream in enumerate(self.audio_streams)]
+
+    @property
+    def channels_streams(self):
+        """Returns the number of channels per substream"""
+        return [
+            self.channels(k) for k, stream in enumerate(self.audio_streams)
+        ]
 
     @property
     def duration_streams(self):
