@@ -65,7 +65,7 @@ def _read_ffmpeg(
     Args:
         filename (str): filename path
         sample_rate (int): sample rate
-        nb_channels (int): metadata info object needed to
+        channels (int): metadata info object needed to
             know the channel configuration in advance
         start (float): start position in seconds
         duration (float): duration in seconds
