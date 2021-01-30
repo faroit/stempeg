@@ -71,13 +71,13 @@ def test_outtype(dtype):
 def test_ffmpeg_format():
     Sint, _ = stempeg.read_stems(
         stempeg.example_stem_path(),
-        dtype=dtype,
+        dtype=np.float32,
         ffmpeg_format="s16le"
     )
 
     Sfloat, _ = stempeg.read_stems(
         stempeg.example_stem_path(),
-        dtype=dtype,
+        dtype=np.float32,
         ffmpeg_format="f32le"
     )
 
