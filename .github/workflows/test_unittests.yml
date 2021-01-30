@@ -26,9 +26,11 @@ jobs:
           auto-update-conda: true
           auto-activate-base: false
           python-version: 3.7
-      - name: Install dependencies
+      - name: Install dependencies FFMPEG ${{ matrix.ffmpeg-version }}
+        env:
+          FFMPEG_INSTALL: ${{ matrix.pytorch-version }}
         run: |
-          conda install -c conda-forge ffmpeg==$FFMPEG_VERSION
+          conda install -c conda-forge ffmpeg==${{ matrix.ffmpeg-version }}
           python -m pip install -e .['tests']
           python --version
           pip --version
