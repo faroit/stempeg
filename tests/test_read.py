@@ -70,17 +70,17 @@ def test_outtype(dtype):
 @pytest.mark.parametrize(
     ("format", "path"),
     [
-        ("WAV", "https://samples.ffmpeg.org/A-codecs/wavpcm/madbear.wav"),
+        ("WAV", "http://samples.ffmpeg.org/A-codecs/wavpcm/madbear.wav"),
         pytest.param(
-            "MP3", "https://samples.ffmpeg.org/A-codecs/MP3/Enrique.mp3",
+            "MP3", "http://samples.ffmpeg.org/A-codecs/MP3/Enrique.mp3",
             marks=pytest.mark.xfail
         ),
         pytest.param(
-            "AAC", "https://samples.ffmpeg.org/A-codecs/AAC/ct_nero-heaac.mp4",
+            "AAC", "http://samples.ffmpeg.org/A-codecs/AAC/ct_nero-heaac.mp4",
             marks=pytest.mark.xfail
         ),
         pytest.param(
-            "OGG", "https://samples.ffmpeg.org/A-codecs/vorbis/ffvorbis_crash.ogm",
+            "OGG", "http://samples.ffmpeg.org/A-codecs/vorbis/ffvorbis_crash.ogm",
             marks=pytest.mark.xfail
         ),
     ],
