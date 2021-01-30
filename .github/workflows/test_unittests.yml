@@ -1,0 +1,43 @@
+name: CI
+# thanks for @mpariente for copying this workflow
+# see: https://help.github.com/en/actions/reference/events-that-trigger-workflows
+# Trigger the workflow on push or pull request
+on: [push, pull_request]
+
+jobs:
+  src-test:
+    name: conda-tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ffmpeg-version: ["3.2.4", "3.4", "4.0.2", "4.1", "4.2", "4.3"]
+
+    # Timeout: https://stackoverflow.com/a/59076067/4521646
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: stempeg
+          auto-update-conda: true
+          auto-activate-base: false
+          python-version: 3.7
+      - name: Install dependencies FFMPEG ${{ matrix.ffmpeg-version }}
+        env:
+          FFMPEG_INSTALL: ${{ matrix.pytorch-version }}
+        run: |
+          sudo apt-get -y install gpac
+          conda install -c conda-forge ffmpeg==${{ matrix.ffmpeg-version }}
+          python -m pip install -e .['tests']
+          python --version
+          pip --version
+          python -m pip list
+      - name: Conda list
+        run: conda list
+      - name: Run tests
+        run: |
+          py.test tests -v
