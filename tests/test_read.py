@@ -17,7 +17,6 @@ def start(request):
 def duration(request):
     return request.param
 
-
 def test_stem_id():
     S, _ = stempeg.read_stems(stempeg.example_stem_path())
     for k in range(S.shape[0]):
@@ -68,20 +67,37 @@ def test_outtype(dtype):
     assert S.dtype == dtype
 
 
-def test_ffmpeg_format():
+@pytest.mark.parametrize(
+    ("format", "path"),
+    [
+        ("WAV", "https://samples.ffmpeg.org/A-codecs/wavpcm/madbear.wav"),
+        pytest.param(
+            "MP3", "https://samples.ffmpeg.org/A-codecs/MP3/Enrique.mp3",
+            marks=pytest.mark.xfail
+        ),
+        pytest.param(
+            "AAC", "https://samples.ffmpeg.org/A-codecs/AAC/ct_nero-heaac.mp4",
+            marks=pytest.mark.xfail
+        ),
+        pytest.param(
+            "OGG", "https://samples.ffmpeg.org/A-codecs/vorbis/ffvorbis_crash.ogm",
+            marks=pytest.mark.xfail
+        ),
+    ],
+)
+def test_ffmpeg_format(format, path):
     Sint, _ = stempeg.read_stems(
-        stempeg.example_stem_path(),
+        path,
         dtype=np.float32,
         ffmpeg_format="s16le"
     )
 
     Sfloat, _ = stempeg.read_stems(
-        stempeg.example_stem_path(),
+        path,
         dtype=np.float32,
         ffmpeg_format="f32le"
     )
-
-    assert np.allclose(Sint, Sfloat, rtol=1e-2, atol=1e-3)
+    assert np.allclose(Sint, Sfloat)
 
 
 def test_info():
