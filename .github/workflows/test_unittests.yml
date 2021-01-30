@@ -30,6 +30,7 @@ jobs:
         env:
           FFMPEG_INSTALL: ${{ matrix.pytorch-version }}
         run: |
+          sudo apt-get -y install gpac
           conda install -c conda-forge ffmpeg==${{ matrix.ffmpeg-version }}
           python -m pip install -e .['tests']
           python --version
