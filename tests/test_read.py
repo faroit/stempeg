@@ -68,6 +68,22 @@ def test_outtype(dtype):
     assert S.dtype == dtype
 
 
+def test_ffmpeg_format():
+    Sint, _ = stempeg.read_stems(
+        stempeg.example_stem_path(),
+        dtype=dtype,
+        ffmpeg_format="s16le"
+    )
+
+    Sfloat, _ = stempeg.read_stems(
+        stempeg.example_stem_path(),
+        dtype=dtype,
+        ffmpeg_format="f32le"
+    )
+
+    assert np.allclose(Sint, Sfloat)
+
+
 def test_info():
     fp = stempeg.example_stem_path()
     info = stempeg.Info(fp)

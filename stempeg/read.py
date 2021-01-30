@@ -71,7 +71,8 @@ def _read_ffmpeg(
         duration (float): duration in seconds
         dtype (numpy.dtype): Type of audio array to be casted into
         stem_idx (int): stream id
-        ffmpeg_format (str): ffmpeg
+        ffmpeg_format (str): ffmpeg intermediate format encoding. 
+            Choose "f32le" for best compatibility
 
     Returns:
         (array_like): numpy audio array
