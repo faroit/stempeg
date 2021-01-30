@@ -81,7 +81,7 @@ def test_ffmpeg_format():
         ffmpeg_format="f32le"
     )
 
-    assert np.allclose(Sint, Sfloat, rtol=1e-3, atol=1e-4)
+    assert np.allclose(Sint, Sfloat, rtol=1e-2, atol=1e-3)
 
 
 def test_info():
