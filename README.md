@@ -1,7 +1,7 @@
 # stempeg = stems + ffmpeg
 
 
-[![Build Status](https://travis-ci.org/faroit/stempeg.svg?branch=master)](https://travis-ci.org/faroit/stempeg)
+[![Build Status](https://github.com/faroit/stempeg/workflows/CI/badge.svg)](https://github.com/faroit/stempeg/actions?query=workflow%3ACI+branch%3Amaster+event%3Apush)
 [![Latest Version](https://img.shields.io/pypi/v/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 
