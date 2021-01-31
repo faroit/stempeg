@@ -26,7 +26,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L0-L350" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L0-L395" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python"># flake8: noqa
 &#34;&#34;&#34;
@@ -83,29 +83,31 @@ class ChannelsReader(Reader):
 def _read_ffmpeg(
     filename,
     sample_rate,
-    metadata,
+    channels,
     start,
     duration,
     dtype,
+    ffmpeg_format,
     stem_idx
 ):
-    &#34;&#34;&#34;Loading data usingg ffmpeg and numpy
+    &#34;&#34;&#34;Loading data using ffmpeg and numpy
 
     Args:
         filename (str): filename path
         sample_rate (int): sample rate
-        metadata (Info): metadata info object needed to
+        channels (int): metadata info object needed to
             know the channel configuration in advance
         start (float): start position in seconds
         duration (float): duration in seconds
         dtype (numpy.dtype): Type of audio array to be casted into
         stem_idx (int): stream id
+        ffmpeg_format (str): ffmpeg intermediate format encoding. 
+            Choose &#34;f32le&#34; for best compatibility
 
     Returns:
         (array_like): numpy audio array
     &#34;&#34;&#34;
-    channels = metadata.channels(stem_idx)
-    output_kwargs = {&#39;format&#39;: &#39;f32le&#39;, &#39;ar&#39;: sample_rate}
+    output_kwargs = {&#39;format&#39;: ffmpeg_format, &#39;ar&#39;: sample_rate}
     if duration is not None:
         output_kwargs[&#39;t&#39;] = str(dt.timedelta(seconds=duration))
     if start is not None:
@@ -118,11 +120,29 @@ def _read_ffmpeg(
         .output(&#39;pipe:&#39;, **output_kwargs)
         .run_async(pipe_stdout=True, pipe_stderr=True))
     buffer, _ = process.communicate()
-    waveform = np.frombuffer(buffer, dtype=&#39;&lt;f4&#39;).reshape(-1, channels)
-    if not waveform.dtype == np.dtype(dtype):
-        waveform = waveform.astype(dtype)
-    return waveform
 
+    # decode to raw pcm format
+    if ffmpeg_format == &#34;f64le&#34;:
+        # PCM 64 bit float 
+        numpy_dtype = &#39;&lt;f8&#39;
+    elif ffmpeg_format == &#34;f32le&#34;:
+        # PCM 32 bit float 
+        numpy_dtype = &#39;&lt;f4&#39;
+    elif ffmpeg_format == &#34;s16le&#34;:
+        # PCM 16 bit signed int
+        numpy_dtype = &#39;&lt;i2&#39;
+    else:
+        raise NotImplementedError(&#34;ffmpeg format is not supported&#34;)
+
+    waveform = np.frombuffer(buffer, dtype=numpy_dtype).reshape(-1, channels)
+
+    if not waveform.dtype == np.dtype(dtype):
+        # cast to target/output dtype
+        waveform = waveform.astype(dtype, order=&#39;C&#39;)
+        # when coming from integer, apply normalization t0 [-1.0, 1.0]
+        if np.issubdtype(numpy_dtype, np.integer):
+            waveform = waveform / (np.iinfo(numpy_dtype).max + 1.0)
+    return waveform
 
 def read_stems(
     filename,
@@ -130,7 +150,8 @@ def read_stems(
     duration=None,
     stem_id=None,
     always_3d=False,
-    dtype=np.float32,
+    dtype=np.float_,
+    ffmpeg_format=&#34;f32le&#34;,
     info=None,
     sample_rate=None,
     reader=StreamsReader(),
@@ -167,6 +188,13 @@ def read_stems(
             file has only one stream.
         dtype: np.dtype, optional.
             Numpy data type to use, default to `np.float32`.
+        ffmpeg_format: intermediate level ffmpeg output format.
+            When decoding the input file, a number of PCM subformats are supported.
+            This format is piped internally to numpy. By default, 
+            32bit PCM float (`f32le`) is used which has the best compatibility,
+            and yields in not loss in bit depth of most common audio files.
+            When the input is only 16bit integer (e.g. standard wav files),
+            `s16le` improves reading speed while yielding the same results.
         info: Info, Optional
             Pass ffmpeg `Info` object to reduce number of os calls on file.
             This can be used e.g. the sample rate and length of a track is
@@ -255,6 +283,14 @@ def read_stems(
     if sample_rate is None:
         sample_rate = metadata.sample_rate(0)
 
+    _chans = metadata.channels_streams
+    # check if all substreams have the same number of channels
+    if len(set(_chans)) == 1:
+        channels = min(_chans)
+    else:
+        raise RuntimeError(&#34;Stems do not have the same number of channels per substream&#34;)
+    
+    # set channels to minimum channel per stream
     stems = []
 
     if _pool:
@@ -263,10 +299,11 @@ def read_stems(
                 _read_ffmpeg,
                 filename,
                 sample_rate,
-                metadata,
+                channels,
                 start,
                 duration,
-                dtype
+                dtype,
+                ffmpeg_format
             ),
             substreams,
             callback=stems.extend
@@ -278,10 +315,11 @@ def read_stems(
             _read_ffmpeg(
                 filename,
                 sample_rate,
-                metadata,
+                channels,
                 start,
                 duration,
                 dtype,
+                ffmpeg_format,
                 stem_idx
             )
             for stem_idx in substreams
@@ -332,6 +370,13 @@ class Info(object):
     def nb_samples_streams(self):
         &#34;&#34;&#34;Returns a list of number of samples for each substream&#34;&#34;&#34;
         return [self.samples(k) for k, stream in enumerate(self.audio_streams)]
+
+    @property
+    def channels_streams(self):
+        &#34;&#34;&#34;Returns the number of channels per substream&#34;&#34;&#34;
+        return [
+            self.channels(k) for k, stream in enumerate(self.audio_streams)
+        ]
 
     @property
     def duration_streams(self):
@@ -389,7 +434,7 @@ class Info(object):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="stempeg.read.read_stems"><code class="name flex">
-<span>def <span class="ident">read_stems</span></span>(<span>filename, start=None, duration=None, stem_id=None, always_3d=False, dtype=numpy.float32, info=None, sample_rate=None, reader=&lt;stempeg.read.StreamsReader object&gt;, multiprocess=False)</span>
+<span>def <span class="ident">read_stems</span></span>(<span>filename, start=None, duration=None, stem_id=None, always_3d=False, dtype=numpy.float64, ffmpeg_format='f32le', info=None, sample_rate=None, reader=&lt;stempeg.read.StreamsReader object&gt;, multiprocess=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Read stems into numpy tensor</p>
@@ -426,6 +471,14 @@ file has only one stream.</dd>
 <dt><strong><code>dtype</code></strong></dt>
 <dd>np.dtype, optional.
 Numpy data type to use, default to <code>np.float32</code>.</dd>
+<dt><strong><code>ffmpeg_format</code></strong></dt>
+<dd>intermediate level ffmpeg output format.
+When decoding the input file, a number of PCM subformats are supported.
+This format is piped internally to numpy. By default,
+32bit PCM float (<code>f32le</code>) is used which has the best compatibility,
+and yields in not loss in bit depth of most common audio files.
+When the input is only 16bit integer (e.g. standard wav files),
+<code>s16le</code> improves reading speed while yielding the same results.</dd>
 <dt><strong><code>info</code></strong></dt>
 <dd>Info, Optional
 Pass ffmpeg <code><a title="stempeg.read.Info" href="#stempeg.read.Info">Info</a></code> object to reduce number of os calls on file.
@@ -473,7 +526,7 @@ sample rate</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L97-L278" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L117-L316" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def read_stems(
     filename,
@@ -481,7 +534,8 @@ sample rate</dd>
     duration=None,
     stem_id=None,
     always_3d=False,
-    dtype=np.float32,
+    dtype=np.float_,
+    ffmpeg_format=&#34;f32le&#34;,
     info=None,
     sample_rate=None,
     reader=StreamsReader(),
@@ -518,6 +572,13 @@ sample rate</dd>
             file has only one stream.
         dtype: np.dtype, optional.
             Numpy data type to use, default to `np.float32`.
+        ffmpeg_format: intermediate level ffmpeg output format.
+            When decoding the input file, a number of PCM subformats are supported.
+            This format is piped internally to numpy. By default, 
+            32bit PCM float (`f32le`) is used which has the best compatibility,
+            and yields in not loss in bit depth of most common audio files.
+            When the input is only 16bit integer (e.g. standard wav files),
+            `s16le` improves reading speed while yielding the same results.
         info: Info, Optional
             Pass ffmpeg `Info` object to reduce number of os calls on file.
             This can be used e.g. the sample rate and length of a track is
@@ -606,6 +667,14 @@ sample rate</dd>
     if sample_rate is None:
         sample_rate = metadata.sample_rate(0)
 
+    _chans = metadata.channels_streams
+    # check if all substreams have the same number of channels
+    if len(set(_chans)) == 1:
+        channels = min(_chans)
+    else:
+        raise RuntimeError(&#34;Stems do not have the same number of channels per substream&#34;)
+    
+    # set channels to minimum channel per stream
     stems = []
 
     if _pool:
@@ -614,10 +683,11 @@ sample rate</dd>
                 _read_ffmpeg,
                 filename,
                 sample_rate,
-                metadata,
+                channels,
                 start,
                 duration,
-                dtype
+                dtype,
+                ffmpeg_format
             ),
             substreams,
             callback=stems.extend
@@ -629,10 +699,11 @@ sample rate</dd>
             _read_ffmpeg(
                 filename,
                 sample_rate,
-                metadata,
+                channels,
                 start,
                 duration,
                 dtype,
+                ffmpeg_format,
                 stem_idx
             )
             for stem_idx in substreams
@@ -681,7 +752,7 @@ number of channels, defaults to <code>2</code>.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L37-L50" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L37-L50" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class ChannelsReader(Reader):
     &#34;&#34;&#34;Using multichannels to multiplex to stems
@@ -714,7 +785,7 @@ This is can be passed, to <code><a title="stempeg.read.read_stems" href="#stempe
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L281-L351" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L319-L396" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Info(object):
     &#34;&#34;&#34;Audio properties that hold a number of metadata.
@@ -740,6 +811,13 @@ This is can be passed, to <code><a title="stempeg.read.read_stems" href="#stempe
     def nb_samples_streams(self):
         &#34;&#34;&#34;Returns a list of number of samples for each substream&#34;&#34;&#34;
         return [self.samples(k) for k, stream in enumerate(self.audio_streams)]
+
+    @property
+    def channels_streams(self):
+        &#34;&#34;&#34;Returns the number of channels per substream&#34;&#34;&#34;
+        return [
+            self.channels(k) for k, stream in enumerate(self.audio_streams)
+        ]
 
     @property
     def duration_streams(self):
@@ -790,13 +868,29 @@ This is can be passed, to <code><a title="stempeg.read.read_stems" href="#stempe
 </details>
 <h3>Instance variables</h3>
 <dl>
+<dt id="stempeg.read.Info.channels_streams"><code class="name">var <span class="ident">channels_streams</span></code></dt>
+<dd>
+<div class="desc"><p>Returns the number of channels per substream</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L344-L349" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@property
+def channels_streams(self):
+    &#34;&#34;&#34;Returns the number of channels per substream&#34;&#34;&#34;
+    return [
+        self.channels(k) for k, stream in enumerate(self.audio_streams)
+    ]</code></pre>
+</details>
+</dd>
 <dt id="stempeg.read.Info.duration_streams"><code class="name">var <span class="ident">duration_streams</span></code></dt>
 <dd>
 <div class="desc"><p>Returns a list of durations (in s) for all substreams</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L306-L311" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L351-L356" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@property
 def duration_streams(self):
@@ -812,7 +906,7 @@ def duration_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L296-L299" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L334-L337" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@property
 def nb_audio_streams(self):
@@ -826,7 +920,7 @@ def nb_audio_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L301-L304" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L339-L342" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@property
 def nb_samples_streams(self):
@@ -840,7 +934,7 @@ def nb_samples_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L313-L319" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L358-L364" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@property
 def title_streams(self):
@@ -862,7 +956,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L321-L323" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L366-L368" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def audio_stream_idx(self):
     &#34;&#34;&#34;Returns audio substream indices&#34;&#34;&#34;
@@ -877,7 +971,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L345-L347" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L390-L392" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def channels(self, idx):
     &#34;&#34;&#34;Returns the number of channels for a gvien substream&#34;&#34;&#34;
@@ -892,7 +986,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L329-L331" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L374-L376" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def duration(self, idx):
     &#34;&#34;&#34;Returns the duration (in seconds) for a stream index&#34;&#34;&#34;
@@ -907,7 +1001,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L337-L339" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L382-L384" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def rate(self, idx):
     # deprecated from older stempeg version
@@ -922,7 +1016,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L341-L343" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L386-L388" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sample_rate(self, idx):
     &#34;&#34;&#34;Return sample rate for a given substream&#34;&#34;&#34;
@@ -937,7 +1031,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L325-L327" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L370-L372" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def samples(self, idx):
     &#34;&#34;&#34;Returns the number of samples for a stream index&#34;&#34;&#34;
@@ -952,7 +1046,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L333-L335" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L378-L380" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def title(self, idx):
     &#34;&#34;&#34;Return the `handler_name` metadata for a given stream index&#34;&#34;&#34;
@@ -970,7 +1064,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L17-L24" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L17-L24" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Reader(object):
     &#34;&#34;&#34;Base class for reader
@@ -996,7 +1090,7 @@ def title_streams(self):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/faroit/stempeg/blob/614fd2fccf32693567645b966c010c1cbbd63395/stempeg/read.py#L27-L34" class="git-link">Browse git</a>
+<a href="https://github.com/faroit/stempeg/blob/cb5eed14d43123bc69e8198be4858bb5e384028c/stempeg/read.py#L27-L34" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class StreamsReader(Reader):
     &#34;&#34;&#34;Holding configuration for streams
@@ -1041,6 +1135,7 @@ def title_streams(self):
 <ul class="two-column">
 <li><code><a title="stempeg.read.Info.audio_stream_idx" href="#stempeg.read.Info.audio_stream_idx">audio_stream_idx</a></code></li>
 <li><code><a title="stempeg.read.Info.channels" href="#stempeg.read.Info.channels">channels</a></code></li>
+<li><code><a title="stempeg.read.Info.channels_streams" href="#stempeg.read.Info.channels_streams">channels_streams</a></code></li>
 <li><code><a title="stempeg.read.Info.duration" href="#stempeg.read.Info.duration">duration</a></code></li>
 <li><code><a title="stempeg.read.Info.duration_streams" href="#stempeg.read.Info.duration_streams">duration_streams</a></code></li>
 <li><code><a title="stempeg.read.Info.nb_audio_streams" href="#stempeg.read.Info.nb_audio_streams">nb_audio_streams</a></code></li>
