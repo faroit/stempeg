@@ -149,45 +149,36 @@ def read_stems(
         filename (str): filename of the audio file to load data from.
         start (float): Start offset to load from in seconds.
         duration (float): Duration to load in seconds.
-        stem_id: int, optional
-            substream id, defauls to `None` (all substreams are loaded).
-        always_3d: bool, optional
-            By default, reading a single-stream audio file will return a
+        stem_id (int, optional): substream id,
+            defauls to `None` (all substreams are loaded).
+        always_3d (bool, optional): By default, reading a 
+            single-stream audio file will return a
             two-dimensional array.  With ``always_3d=True``, audio data is
             always returned as a three-dimensional array, even if the audio
             file has only one stream.
-        dtype: np.dtype, optional.
-            Numpy data type to use, default to `np.float32`.
-        ffmpeg_format: intermediate level ffmpeg output format.
-            When decoding the input file, a number of PCM subformats are supported.
-            This format is piped internally to numpy. By default, 
-            32bit PCM float (`f32le`) is used which has the best compatibility,
-            and yields in not loss in bit depth of most common audio files.
-            When the input is only 16bit integer (e.g. standard wav files),
-            `s16le` improves reading speed while yielding the same results.
-        info: Info, Optional
-            Pass ffmpeg `Info` object to reduce number of os calls on file.
+        dtype (np.dtype, optional): Numpy data type to use, default to `np.float32`.
+        info (Info, Optional): Pass ffmpeg `Info` object to reduce number 
+            of os calls on file.
             This can be used e.g. the sample rate and length of a track is
             already known in advance. Useful for ML training where the
             info objects can be pre-processed, thus audio loading can
             be speed up.
-        sample_rate: float, optional
-            Sample rate of returned audio. Defaults to `None` which results in
+        sample_rate (float, optional): Sample rate of returned audio. 
+            Defaults to `None` which results in
             the sample rate returned from the mixture.
-        reader: Reader
-            Holds parameters for the reading method. One of the following:
+        reader (Reader): Holds parameters for the reading method. 
+            One of the following:
                 `StreamsReader(...)`
                     Read from a single multistream audio (default).
                 `ChannelsReader(...)`
                     Read/demultiplexed from multiple channels.
-        multiprocess: bool
-            Applys multi-processing for reading substreams in parallel to
-            speed up reading. Defaults to `True`
+        multiprocess (bool): Applys multi-processing for reading 
+            substreams in parallel to speed up reading. Defaults to `True`
 
     Returns:
-        stems: array_like
+        stems (array_like):
             stems tensor of `shape=(stem x samples x channels)`
-        rate: float
+        rate (float):
             sample rate
 
     Shape:
