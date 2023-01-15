@@ -4,6 +4,11 @@ Writing module to load stems into numpy tensors.
 
 
 """
+import codecs
+import json
+import os
+import subprocess
+
 from stempeg.write import FilesWriter
 import numpy as np
 import warnings
@@ -13,6 +18,8 @@ from multiprocessing import Pool
 import atexit
 from functools import partial
 import datetime as dt
+from .cmds import mp4box_exists, find_cmd
+
 
 class Reader(object):
     """Base class for reader
@@ -321,6 +328,11 @@ class Info(object):
             stream for stream in self.info['streams']
             if stream['codec_type'] == 'audio'
         ]
+        # Try to get the stem titles using MP4Box if possible, otherwise fall back to numbered stems
+        stem_titles = _read_mp4box_stem_titles(filename)
+        if stem_titles is not None:
+            for i, stream in enumerate(self.audio_streams):
+                stream['tags']['handler_name'] = stem_titles[i]
 
     @property
     def nb_audio_streams(self):
@@ -385,3 +397,46 @@ class Info(object):
     def __repr__(self):
         """Print stream information"""
         return pprint.pformat(self.audio_streams)
+
+
+def _read_mp4box_stem_titles(filename):
+    """Reads a mp4 stem titles file using MP4Box
+    Mainly taken from https://github.com/axeldelafosse/stemgen/blob/master/ni-stem/_internal.py
+    """
+    if not mp4box_exists():
+        warnings.warn(
+            'MP4Box could not be found! '
+            'Stem names (if available) will not be extracted. '
+            'Defaults to "stem_0", "stem_1", ...'
+            'Please install, for reference see: '
+            'https://github.com/faroit/stempeg#1a-optional-installation-of-mp4box and '
+            'https://github.com/gpac/gpac#getting-started'
+        )
+    mp4box = find_cmd("MP4Box")
+
+    try:
+        callArgs = [mp4box]
+        callArgs.extend(["-dump-udta", "0:stem", filename, '-quiet'])
+        subprocess.check_call(callArgs)
+
+    except subprocess.CalledProcessError as e:
+        warnings.warn("MP4Box could not be process input file! ")
+        return None
+
+    try:
+        root, ext = os.path.splitext(filename)
+        udtaFile = root + "_stem.udta"
+        fileObj = codecs.open(udtaFile, encoding="utf-8")
+        # fileObj.seek(8)   # Not sure why in the original code this is needed?
+        _metadata = json.load(fileObj)
+        os.remove(udtaFile)
+
+        # add the mixture stem first since its index is 0 as per rest of the project
+        stem_titles = ['Mixture'] + [d['name'] for d in _metadata['stems']]
+
+    except FileNotFoundError as e:
+        warnings.warn("MP4Box could not find the stem metadata! ")
+        return None
+
+    return stem_titles
+

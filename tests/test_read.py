@@ -104,3 +104,9 @@ def test_info():
     fp = stempeg.example_stem_path()
     info = stempeg.Info(fp)
     S, rate = stempeg.read_stems(fp, info=info)
+
+
+def test_info_stem_titles():
+    fp = stempeg.example_stem_path()
+    info = stempeg.Info(fp)
+    assert info.title_streams == ['Mixture', 'Drums', 'Bass', 'Other', 'Vox']
