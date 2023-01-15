@@ -403,40 +403,32 @@ def _read_mp4box_stem_titles(filename):
     """Reads a mp4 stem titles file using MP4Box
     Mainly taken from https://github.com/axeldelafosse/stemgen/blob/master/ni-stem/_internal.py
     """
-    if not mp4box_exists():
-        warnings.warn(
-            'MP4Box could not be found! '
-            'Stem names (if available) will not be extracted. '
-            'Defaults to "stem_0", "stem_1", ...'
-            'Please install, for reference see: '
-            'https://github.com/faroit/stempeg#1a-optional-installation-of-mp4box and '
-            'https://github.com/gpac/gpac#getting-started'
-        )
-    mp4box = find_cmd("MP4Box")
+    stem_titles = None
+    if mp4box_exists():
 
-    try:
-        callArgs = [mp4box]
-        callArgs.extend(["-dump-udta", "0:stem", filename, '-quiet'])
-        subprocess.check_call(callArgs)
+        mp4box = find_cmd("MP4Box")
 
-    except subprocess.CalledProcessError as e:
-        warnings.warn("MP4Box could not be process input file! ")
-        return None
+        try:
+            callArgs = [mp4box]
+            callArgs.extend(["-dump-udta", "0:stem", filename, '-quiet'])
+            subprocess.check_call(callArgs)
 
-    try:
-        root, ext = os.path.splitext(filename)
-        udtaFile = root + "_stem.udta"
-        fileObj = codecs.open(udtaFile, encoding="utf-8")
-        # fileObj.seek(8)   # Not sure why in the original code this is needed?
-        _metadata = json.load(fileObj)
-        os.remove(udtaFile)
+        except subprocess.CalledProcessError as e:
+            return None
 
-        # add the mixture stem first since its index is 0 as per rest of the project
-        stem_titles = ['Mixture'] + [d['name'] for d in _metadata['stems']]
+        try:
+            root, ext = os.path.splitext(filename)
+            udtaFile = root + "_stem.udta"
+            fileObj = codecs.open(udtaFile, encoding="utf-8")
+            # fileObj.seek(8)   # Not sure why in the original code this is needed?
+            _metadata = json.load(fileObj)
+            os.remove(udtaFile)
 
-    except FileNotFoundError as e:
-        warnings.warn("MP4Box could not find the stem metadata! ")
-        return None
+            # add the mixture stem first since its index is 0 as per rest of the project
+            stem_titles = ['Mixture'] + [d['name'] for d in _metadata['stems']]
+
+        except FileNotFoundError as e:
+            return None
 
     return stem_titles
 
