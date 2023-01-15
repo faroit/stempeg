@@ -294,7 +294,7 @@ def read_stems(
         ]
     stem_durations = np.array([t.shape[0] for t in stems])
     if not (stem_durations == stem_durations[0]).all():
-        warnings.warning("Stems differ in length and were shortend")
+        warnings.warn("Stems differ in length and were shortend")
         min_length = np.min(stem_durations)
         stems = [t[:min_length, :] for t in stems]
 
