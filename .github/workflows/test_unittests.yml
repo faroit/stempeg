@@ -29,6 +29,7 @@ jobs:
       - name: Install dependencies FFMPEG ${{ matrix.ffmpeg-version }}
         env:
           FFMPEG_INSTALL: ${{ matrix.pytorch-version }}
+          MP4BOX_PATH: /usr/bin/MP4Box
         run: |
           sudo apt-get -y install gpac
           which MP4Box
