@@ -46,11 +46,14 @@ def ffprobe_exists():
 
 def mp4box_exists():
     global MP4BOX_PATH
+    print(MP4BOX_PATH)
+
     if "MP4BOX_PATH" in os.environ:
         env_path = os.environ["MP4BOX_PATH"]
         MP4BOX_PATH = find_cmd(env_path)
     else:
         MP4BOX_PATH = find_cmd("MP4Box")
+        print(MP4BOX_PATH)
 
     return MP4BOX_PATH is not None
 
