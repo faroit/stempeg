@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ffmpeg-version: ["3.2.4", "3.4", "4.0.2", "4.1", "4.2", "4.3"]
+        ffmpeg-version: ["3.2.4", "3.4.2", "4.4.2", "5.1.2", "6.1.1", "7.0.0"]
 
     # Timeout: https://stackoverflow.com/a/59076067/4521646
     timeout-minutes: 10
