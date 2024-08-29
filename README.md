@@ -6,7 +6,7 @@
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/stempeg.svg)](https://pypi.python.org/pypi/stempeg)
 
 Python package to read and write [STEM](https://www.native-instruments.com/en/specials/stems/) audio files.
-Technically, stems are audio containers that combine multiple audio streams and metadata in a single audio file. This makes it ideal to playback multitrack audio, where users can select the audio sub-stream during playback (e.g. supported by VLC). 
+Technically, stems are audio containers that combine multiple audio streams and metadata in a single audio file. This makes it ideal to playback multitrack audio, where users can select the audio sub-stream during playback (e.g. supported by VLC).
 
 Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and writing multistream audio, optionally [MP4Box](https://github.com/gpac/gpac) is used to create STEM files that are compatible with Native Instruments hardware and software.
 
@@ -14,7 +14,7 @@ Under the hood, _stempeg_ uses [ffmpeg](https://www.ffmpeg.org/) for reading and
 
 - robust and fast interface for ffmpeg to read and write any supported format from/to numpy.
 - reading supports seeking and duration.
-- control container and codec as well as bitrate when compressed audio is written. 
+- control container and codec as well as bitrate when compressed audio is written.
 - store multi-track audio within audio formats by aggregate streams into channels (concatenation of pairs of
 stereo channels).
 - support for internal ffmpeg resampling furing read and write.
@@ -70,7 +70,7 @@ conda install -c conda-forge stempeg
 
 Stempeg can read multi-stream and single stream audio files, thus, it can replace your normal audio loaders for 1d or 2d (mono/stereo) arrays.
 
-By default [`read_stems`](https://faroit.com/stempeg/read.html#stempeg.read.read_stems), assumes that multiple substreams can exit (default `reader=stempeg.StreamsReader()`). 
+By default [`read_stems`](https://faroit.com/stempeg/read.html#stempeg.read.read_stems), assumes that multiple substreams can exit (default `reader=stempeg.StreamsReader()`).
 To support multi-stream, even when the audio container doesn't support multiple streams
 (e.g. WAV), streams can be mapped to multiple pairs of channels. In that
 case, `reader=stempeg.ChannelsReader()`, can be passed. Also see:
@@ -121,7 +121,7 @@ Writing stem files from a numpy tensor can done with.
 stempeg.write_stems(path="output.stem.mp4", data=S, sample_rate=44100, writer=stempeg.StreamsWriter())
 ```
 
-As seen in the flow chart above, stempeg supports multiple ways to write multi-stream audio. 
+As seen in the flow chart above, stempeg supports multiple ways to write multi-stream audio.
 Each of the method has different number of parameters. To select a method one of the following setting and be passed:
 
 * `stempeg.FilesWriter`
@@ -136,8 +136,8 @@ Each of the method has different number of parameters. To select a method one of
     Stem will be saved into a single multistream audio.
     Additionally Native Instruments Stems compabible
     Metadata is added. This requires the installation of
-    `MP4Box`. 
-    
+    `MP4Box`.
+
 > :warning: __Warning__: Muxing stems using _ffmpeg_ leads to multi-stream files not compatible with Native Instrument Hardware or Software. Please use [MP4Box](https://github.com/gpac/gpac) if you use the `stempeg.NISTemsWriter()`
 
 For more information on writing stems, see  [`stempeg.write_stems`](https://faroit.com/stempeg/write.html#stempeg.write.write_stems).

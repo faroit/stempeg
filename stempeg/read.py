@@ -71,7 +71,7 @@ def _read_ffmpeg(
         duration (float): duration in seconds
         dtype (numpy.dtype): Type of audio array to be casted into
         stem_idx (int): stream id
-        ffmpeg_format (str): ffmpeg intermediate format encoding. 
+        ffmpeg_format (str): ffmpeg intermediate format encoding.
             Choose "f32le" for best compatibility
 
     Returns:
@@ -93,10 +93,10 @@ def _read_ffmpeg(
 
     # decode to raw pcm format
     if ffmpeg_format == "f64le":
-        # PCM 64 bit float 
+        # PCM 64 bit float
         numpy_dtype = '<f8'
     elif ffmpeg_format == "f32le":
-        # PCM 32 bit float 
+        # PCM 32 bit float
         numpy_dtype = '<f4'
     elif ffmpeg_format == "s16le":
         # PCM 16 bit signed int
@@ -120,7 +120,7 @@ def read_stems(
     duration=None,
     stem_id=None,
     always_3d=False,
-    dtype=np.float_,
+    dtype=np.float64,
     ffmpeg_format="f32le",
     info=None,
     sample_rate=None,
@@ -151,28 +151,28 @@ def read_stems(
         duration (float): Duration to load in seconds.
         stem_id (int, optional): substream id,
             defauls to `None` (all substreams are loaded).
-        always_3d (bool, optional): By default, reading a 
+        always_3d (bool, optional): By default, reading a
             single-stream audio file will return a
             two-dimensional array.  With ``always_3d=True``, audio data is
             always returned as a three-dimensional array, even if the audio
             file has only one stream.
         dtype (np.dtype, optional): Numpy data type to use, default to `np.float32`.
-        info (Info, Optional): Pass ffmpeg `Info` object to reduce number 
+        info (Info, Optional): Pass ffmpeg `Info` object to reduce number
             of os calls on file.
             This can be used e.g. the sample rate and length of a track is
             already known in advance. Useful for ML training where the
             info objects can be pre-processed, thus audio loading can
             be speed up.
-        sample_rate (float, optional): Sample rate of returned audio. 
+        sample_rate (float, optional): Sample rate of returned audio.
             Defaults to `None` which results in
             the sample rate returned from the mixture.
-        reader (Reader): Holds parameters for the reading method. 
+        reader (Reader): Holds parameters for the reading method.
             One of the following:
                 `StreamsReader(...)`
                     Read from a single multistream audio (default).
                 `ChannelsReader(...)`
                     Read/demultiplexed from multiple channels.
-        multiprocess (bool): Applys multi-processing for reading 
+        multiprocess (bool): Applys multi-processing for reading
             substreams in parallel to speed up reading. Defaults to `True`
 
     Returns:
@@ -250,7 +250,7 @@ def read_stems(
         channels = min(_chans)
     else:
         raise RuntimeError("Stems do not have the same number of channels per substream")
-    
+
     # set channels to minimum channel per stream
     stems = []
 
