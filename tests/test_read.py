@@ -1,6 +1,7 @@
 import stempeg
 import numpy as np
 import pytest
+import os
 
 
 @pytest.fixture(params=[np.float16, np.float32, np.float64])
@@ -104,3 +105,15 @@ def test_info():
     fp = stempeg.example_stem_path()
     info = stempeg.Info(fp)
     S, rate = stempeg.read_stems(fp, info=info)
+
+
+def test_cmd():
+    assert stempeg.ffmpeg_exists()
+    assert stempeg.mp4box_exists()
+    assert stempeg.ffprobe_exists()
+    os.environ["FFMPEG_PATH"] = "/path_that_does_not_exist"
+    os.environ["FFPROBE_PATH"] = "/path_that_does_not_exist"
+    os.environ["MP4BOX_PATH"] = "/path_that_does_not_exist"
+    assert not stempeg.ffprobe_exists()
+    assert not stempeg.ffmpeg_exists()
+    assert not stempeg.mp4box_exists()    
