@@ -758,7 +758,7 @@ def write_stems(
     """
     # check if ffmpeg installed
     if int(stempeg.ffmpeg_version()[0]) < 3:
-        warnings.warning(
+        warnings.warn(
             "Writing stems with FFMPEG version < 3 is unsupported",
             UserWarning
         )
