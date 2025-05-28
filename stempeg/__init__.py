@@ -20,7 +20,7 @@ from .write import write_stems
 from .write import write_audio
 from .write import FilesWriter, StreamsWriter, ChannelsWriter, NIStemsWriter
 
-from .cmds import check_available_aac_encoders
+from .cmds import check_available_aac_encoders, ffmpeg_exists, ffprobe_exists, mp4box_exists
 
 import re
 import os

@@ -1,4 +1,5 @@
 from stempeg.write import ChannelsWriter
+from stempeg.cmds import MP4BOX_PATH 
 import stempeg
 import numpy as np
 import pytest
@@ -161,8 +162,6 @@ def ordered(obj):
 
 @pytest.mark.optional
 def test_nistems():
-    mp4exc = stempeg.cmds.find_cmd("MP4Box")
-
     stems, rate = stempeg.read_stems(stempeg.example_stem_path())
     with tmp.NamedTemporaryFile(
         delete=False,
@@ -175,7 +174,7 @@ def test_nistems():
             sample_rate=rate,
             writer=stempeg.NIStemsWriter()
         )
-        callArgs = [mp4exc]
+        callArgs = [MP4BOX_PATH]
         callArgs.extend(["-dump-udta", "0:stem", tempfile.name])
         sp.check_call(callArgs)
 

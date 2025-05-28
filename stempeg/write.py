@@ -20,7 +20,7 @@ import numpy as np
 
 import stempeg
 
-from .cmds import FFMPEG_PATH, mp4box_exists, get_aac_codec, find_cmd
+from .cmds import FFMPEG_PATH, MP4BOX_PATH, mp4box_exists, get_aac_codec, find_cmd
 
 
 def _build_channel_map(nb_stems, nb_channels, stem_names=None):
@@ -497,7 +497,6 @@ class NIStemsWriter(Writer):
                 'Please install them before using NIStemsWriter().'
                 'See: https://github.com/faroit/stempeg'
             )
-        self.mp4boxcli = find_cmd("MP4Box")
         self.bitrate = bitrate
         self.default_metadata = default_metadata
         self.stems_metadata = stems_metadata
@@ -564,7 +563,7 @@ class NIStemsWriter(Writer):
             if self.stems_metadata is not None:
                 metadata['stems'] = self.stems_metadata
 
-            callArgs = [self.mp4boxcli]
+            callArgs = [MP4BOX_PATH]
             callArgs.extend(["-add", str(Path(tempdir, '0.m4a#ID=Z')), path])
             for s in range(1, data.shape[0]):
                 callArgs.extend(
@@ -758,7 +757,7 @@ def write_stems(
     """
     # check if ffmpeg installed
     if int(stempeg.ffmpeg_version()[0]) < 3:
-        warnings.warning(
+        warnings.warn(
             "Writing stems with FFMPEG version < 3 is unsupported",
             UserWarning
         )
