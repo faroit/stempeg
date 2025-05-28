@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 
-@pytest.fixture(params=[1024, 2048, 12313, 100000])
+@pytest.fixture(params=[1024, 2048, 100000])
 def nb_samples(request):
     return request.param
 

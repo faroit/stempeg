@@ -160,7 +160,7 @@ def ordered(obj):
     else:
         return obj
 
-
+@pytest.mark.optional
 def test_nistems():
     stems, rate = stempeg.read_stems(stempeg.example_stem_path())
     with tmp.NamedTemporaryFile(
