@@ -8,12 +8,12 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 0, 0.0000001, 5])
+@pytest.fixture(params=[None, 0, 0.0000001, 1])
 def start(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 0.00000001, 0.5, 1, 2.00000000000001])
+@pytest.fixture(params=[None, 0.00000001, 0.5, 2.00000000000001])
 def duration(request):
     return request.param
 

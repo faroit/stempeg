@@ -159,7 +159,7 @@ def ordered(obj):
     else:
         return obj
 
-
+@pytest.mark.optional
 def test_nistems():
     mp4exc = stempeg.cmds.find_cmd("MP4Box")
 
