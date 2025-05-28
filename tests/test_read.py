@@ -8,7 +8,7 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 0, 0.0000001, 1, 100])
+@pytest.fixture(params=[None, 0, 0.0000001, 5])
 def start(request):
     return request.param
 
