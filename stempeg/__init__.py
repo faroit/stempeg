@@ -23,13 +23,12 @@ from .write import FilesWriter, StreamsWriter, ChannelsWriter, NIStemsWriter
 from .cmds import check_available_aac_encoders
 
 import re
-import os
 import subprocess as sp
-from os import path as op
-import argparse
-import pkg_resources
+import importlib.resources as importlib_resources
+import atexit
+from contextlib import ExitStack
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 
 def example_stem_path():
@@ -40,10 +39,11 @@ def example_stem_path():
     filename : str
         Path to the stem file
     """
-    return pkg_resources.resource_filename(
-        __name__,
-        'data/The Easton Ellises - Falcon 69.stem.mp4'
-    )
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ref = importlib_resources.files(__name__) / 'data/The Easton Ellises - Falcon 69.stem.mp4'
+    path = file_manager.enter_context(importlib_resources.as_file(ref))
+    return str(path)
 
 
 def default_metadata():
@@ -54,10 +54,11 @@ def default_metadata():
     filename : str
         Path to the json file
     """
-    return pkg_resources.resource_filename(
-        __name__,
-        'data/default_metadata.json'
-    )
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ref = importlib_resources.files(__name__) / 'data/default_metadata.json'
+    path = file_manager.enter_context(importlib_resources.as_file(ref))
+    return str(path)
 
 
 def ffmpeg_version():
