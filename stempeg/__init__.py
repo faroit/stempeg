@@ -28,7 +28,7 @@ import importlib.resources as importlib_resources
 import atexit
 from contextlib import ExitStack
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 
 def example_stem_path():
