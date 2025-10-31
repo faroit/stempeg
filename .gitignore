@@ -7,6 +7,8 @@ envffmpeg/
 .vscode/
 .circleci/
 
+# Pycharm
+.idea/
 
 #####=== OSX ===#####
 .DS_Store
