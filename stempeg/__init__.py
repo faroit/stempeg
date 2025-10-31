@@ -27,7 +27,15 @@ import os
 import subprocess as sp
 from os import path as op
 import argparse
-import pkg_resources
+
+# Prefer importlib.resources to avoid deprecated pkg_resources
+try:
+    from importlib.resources import files, as_file  # Python 3.9+
+
+    _USE_IMPORTLIB_RESOURCES = True
+except Exception:  # pragma: no cover - fallback on very old Python
+    _USE_IMPORTLIB_RESOURCES = False
+    import pkg_resources  # type: ignore
 
 __version__ = "0.2.2"
 
@@ -38,12 +46,19 @@ def example_stem_path():
     Returns
     -------
     filename : str
-        Path to the stem file
+        Filesystem path to the stem file (temp path if package is zipped)
     """
-    return pkg_resources.resource_filename(
-        __name__,
-        'data/The Easton Ellises - Falcon 69.stem.mp4'
-    )
+    rel_path = "data/The Easton Ellises - Falcon 69.stem.mp4"
+    if _USE_IMPORTLIB_RESOURCES:
+        ref = files("stempeg").joinpath(rel_path)
+        try:
+            # as_file handles zipped/zip-safe installs by creating a tmp file
+            with as_file(ref) as concrete_path:
+                return str(concrete_path)
+        except Exception:
+            return str(ref)
+    else:  # fallback
+        return pkg_resources.resource_filename(__name__, rel_path)
 
 
 def default_metadata():
@@ -52,12 +67,18 @@ def default_metadata():
     Returns
     -------
     filename : str
-        Path to the json file
+        Filesystem path to the json file (temp path if package is zipped)
     """
-    return pkg_resources.resource_filename(
-        __name__,
-        'data/default_metadata.json'
-    )
+    rel_path = "data/default_metadata.json"
+    if _USE_IMPORTLIB_RESOURCES:
+        ref = files("stempeg").joinpath(rel_path)
+        try:
+            with as_file(ref) as concrete_path:
+                return str(concrete_path)
+        except Exception:
+            return str(ref)
+    else:  # fallback
+        return pkg_resources.resource_filename(__name__, rel_path)
 
 
 def ffmpeg_version():

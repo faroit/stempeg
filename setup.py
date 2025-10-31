@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="stempeg",
-    version="0.2.4",
+    version="0.2.5",
     description="Read and write stem/multistream audio files",
     long_description=long_description,
     long_description_content_type="text/markdown",
