@@ -27,17 +27,9 @@ import os
 import subprocess as sp
 from os import path as op
 import argparse
+from importlib.resources import files, as_file  # Python 3.9+
 
-# Prefer importlib.resources to avoid deprecated pkg_resources
-try:
-    from importlib.resources import files, as_file  # Python 3.9+
-
-    _USE_IMPORTLIB_RESOURCES = True
-except Exception:  # pragma: no cover - fallback on very old Python
-    _USE_IMPORTLIB_RESOURCES = False
-    import pkg_resources  # type: ignore
-
-__version__ = "0.2.2"
+__version__ = "0.2.6"
 
 
 def example_stem_path():
@@ -49,16 +41,13 @@ def example_stem_path():
         Filesystem path to the stem file (temp path if package is zipped)
     """
     rel_path = "data/The Easton Ellises - Falcon 69.stem.mp4"
-    if _USE_IMPORTLIB_RESOURCES:
-        ref = files("stempeg").joinpath(rel_path)
-        try:
-            # as_file handles zipped/zip-safe installs by creating a tmp file
-            with as_file(ref) as concrete_path:
-                return str(concrete_path)
-        except Exception:
-            return str(ref)
-    else:  # fallback
-        return pkg_resources.resource_filename(__name__, rel_path)
+    ref = files("stempeg").joinpath(rel_path)
+    try:
+        # as_file handles zipped/zip-safe installs by creating a tmp file
+        with as_file(ref) as concrete_path:
+            return str(concrete_path)
+    except Exception:
+        return str(ref)
 
 
 def default_metadata():
@@ -70,15 +59,12 @@ def default_metadata():
         Filesystem path to the json file (temp path if package is zipped)
     """
     rel_path = "data/default_metadata.json"
-    if _USE_IMPORTLIB_RESOURCES:
-        ref = files("stempeg").joinpath(rel_path)
-        try:
-            with as_file(ref) as concrete_path:
-                return str(concrete_path)
-        except Exception:
-            return str(ref)
-    else:  # fallback
-        return pkg_resources.resource_filename(__name__, rel_path)
+    ref = files("stempeg").joinpath(rel_path)
+    try:
+        with as_file(ref) as concrete_path:
+            return str(concrete_path)
+    except Exception:
+        return str(ref)
 
 
 def ffmpeg_version():
