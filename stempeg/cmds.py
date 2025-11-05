@@ -1,6 +1,7 @@
 import re
 import subprocess as sp
 import logging
+import os
 
 FFMPEG_PATH = None
 FFPROBE_PATH = None
@@ -20,30 +21,56 @@ def find_cmd(cmd):
     return None
 
 
-def ffmpeg_and_ffprobe_exists():
-    global FFMPEG_PATH, FFPROBE_PATH
-    if FFMPEG_PATH is None:
+def ffmpeg_exists():
+    global FFMPEG_PATH
+    # check environment variable
+    if "FFMPEG_PATH" in os.environ:
+        env_path = os.environ["FFMPEG_PATH"]
+        FFMPEG_PATH = find_cmd(env_path)
+    else:
         FFMPEG_PATH = find_cmd("ffmpeg")
 
-    if FFPROBE_PATH is None:
+    return FFMPEG_PATH is not None
+
+
+def ffprobe_exists():
+    global FFPROBE_PATH
+    if "FFPROBE_PATH" in os.environ:
+        env_path = os.environ["FFPROBE_PATH"]
+        FFPROBE_PATH = find_cmd(env_path)
+    else:
         FFPROBE_PATH = find_cmd("ffprobe")
 
-    return FFMPEG_PATH is not None and FFPROBE_PATH is not None
+    return FFPROBE_PATH is not None
 
 
 def mp4box_exists():
     global MP4BOX_PATH
-    if MP4BOX_PATH is None:
+    print(MP4BOX_PATH)
+
+    if "MP4BOX_PATH" in os.environ:
+        env_path = os.environ["MP4BOX_PATH"]
+        MP4BOX_PATH = find_cmd(env_path)
+    else:
         MP4BOX_PATH = find_cmd("MP4Box")
+        print(MP4BOX_PATH)
 
     return MP4BOX_PATH is not None
 
 
-if not ffmpeg_and_ffprobe_exists():
+if not ffmpeg_exists():
     raise RuntimeError(
-        'ffmpeg or ffprobe could not be found! '
-        'Please install them before using stempeg. '
-        'See: https://github.com/faroit/stempeg'
+        "ffmpeg could not be found! "
+        "Please install it before using stempeg. "
+        "See: https://github.com/faroit/stempeg"
+    )
+
+
+if not ffprobe_exists():
+    raise RuntimeError(
+        "ffprobe could not be found! "
+        "Please install it before using stempeg. "
+        "See: https://github.com/faroit/stempeg"
     )
 
 
